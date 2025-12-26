@@ -45,12 +45,11 @@ import java.util.stream.IntStream;
  * Builders, decoders, and controllers are expected to manage concurrency
  * at higher layers if required.
  */
-public final class BitSetSignalSet<ID extends SignalId> implements SignalSet<ID>
+public class BitSetSignalSet<ID extends SignalId> implements SignalSet<ID>
 {
-
-    private final SignalIndex<ID> index;
-    private final BitSet relevance;
-    private final BitSet values;
+    protected final SignalIndex<ID> index;
+    protected final BitSet relevance;
+    protected final BitSet values;
 
     /**
      * Creates an empty {@code BitSetSignalSet} (all signals DONT_CARE)
@@ -58,7 +57,7 @@ public final class BitSetSignalSet<ID extends SignalId> implements SignalSet<ID>
      *
      * @param index mapping between {@link SignalId} and dense indices
      */
-    public BitSetSignalSet(SignalIndex<ID> index) {
+    protected BitSetSignalSet(SignalIndex<ID> index) {
         this.index = Objects.requireNonNull(index, "index");
         this.relevance = new BitSet(index.size());
         this.values = new BitSet(index.size());
@@ -74,7 +73,7 @@ public final class BitSetSignalSet<ID extends SignalId> implements SignalSet<ID>
      * @param id    signal identifier
      * @param state desired signal state
      */
-    public void set(ID id, SignalState state) {
+    public final void set(ID id, SignalState state) {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(state, "state");
 
@@ -97,7 +96,7 @@ public final class BitSetSignalSet<ID extends SignalId> implements SignalSet<ID>
     }
 
     @Override
-    public SignalState get(ID id) {
+    public final SignalState get(ID id) {
         Objects.requireNonNull(id, "id");
         int idx = index.indexOf(id);
 
@@ -108,24 +107,24 @@ public final class BitSetSignalSet<ID extends SignalId> implements SignalSet<ID>
     }
 
     @Override
-    public boolean isEmpty() {
+    public final boolean isEmpty() {
         return relevance.isEmpty();
     }
 
     @Override
-    public Set<ID> relevantSignals() {
+    public final Set<ID> relevantSignals() {
         return relevance.stream()
                 .mapToObj(index::idAt)
                 .collect(Collectors.toSet());
     }
 
     @Override
-    public Set<ID> allSignals() {
+    public final Set<ID> allSignals() {
         return index.allSignals();
     }
 
     @Override
-    public SignalSet<ID> merge(SignalSet<ID> other) {
+    public final SignalSet<ID> merge(SignalSet<ID> other) {
         Objects.requireNonNull(other, "other");
 
         BitSetSignalSet<ID> merged = new BitSetSignalSet<>(index);
@@ -143,14 +142,14 @@ public final class BitSetSignalSet<ID extends SignalId> implements SignalSet<ID>
     }
 
     @Override
-    public void assertMaterialized() {
+    public final void assertMaterialized() {
         if (relevance.cardinality() != index.size()) {
             throw new IllegalStateException("SignalSet is not fully materialized");
         }
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return IntStream.range(0, index.size())
                 .filter(relevance::get)
                 .mapToObj(i -> index.idAt(i) + "=" + values.get(i))
