@@ -3,93 +3,95 @@ package com.questrail.wayside.core;
 import com.questrail.wayside.api.SignalId;
 import com.questrail.wayside.api.SignalSet;
 import com.questrail.wayside.api.SignalState;
+import com.questrail.wayside.mapping.SignalIndex;
 
 import java.util.BitSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
  * BitSetSignalSet
  * -----------------------------------------------------------------------------
- * A dense, efficient {@link SignalSet} implementation backed by {@link BitSet}.
+ * A dense, efficient {@link SignalSet} implementation backed by {@link BitSet},
+ * using a {@link SignalIndex} to map semantic {@link SignalId}s to 0-based indices.
  *
- * This class is the primary production implementation of {@link SignalSet}.
- * It preserves all semantic guarantees established by the API while providing:
- *
+ * <h2>Design Intent</h2>
+ * This class is the primary production implementation of {@code SignalSet}.
+ * It preserves all semantic guarantees of the API while enabling:
  * <ul>
  *   <li>Compact memory representation</li>
- *   <li>Fast merge and diff operations</li>
- *   <li>Cache-friendly iteration</li>
+ *   <li>O(1) access by signal identity</li>
+ *   <li>Fast merge operations for partial updates</li>
  * </ul>
  *
  * <h2>Internal Representation</h2>
- * Two parallel {@link BitSet}s are used:
+ * Two parallel {@link BitSet}s are maintained:
  * <ul>
- *   <li>{@code values}     – the boolean value (TRUE/FALSE)</li>
- *   <li>{@code relevance}  – whether the value is relevant</li>
+ *   <li>{@code relevance} – whether a signal is specified</li>
+ *   <li>{@code values}    – the boolean value when relevant</li>
  * </ul>
  *
- * A signal is interpreted as:
- * <ul>
- *   <li>relevance=false → {@link SignalState#DONT_CARE}</li>
- *   <li>relevance=true & value=false → {@link SignalState#FALSE}</li>
- *   <li>relevance=true & value=true  → {@link SignalState#TRUE}</li>
- * </ul>
- *
- * <h2>Identity Mapping</h2>
- * Bit positions are mapped to {@link SignalId}s via an externally supplied
- * index function. This keeps protocol/layout concerns out of this class.
+ * Interpretation:
+ * <pre>
+ * relevance = false                 → DONT_CARE
+ * relevance = true,  values = false → FALSE
+ * relevance = true,  values = true  → TRUE
+ * </pre>
  *
  * <h2>Mutability</h2>
- * This implementation is mutable by design for performance reasons. Callers
- * must not assume thread safety.
+ * This class is mutable by design and makes no thread-safety guarantees.
+ * Builders, decoders, and controllers are expected to manage concurrency
+ * at higher layers if required.
  */
 public final class BitSetSignalSet<ID extends SignalId> implements SignalSet<ID>
 {
-    private final BitSet values;
+
+    private final SignalIndex<ID> index;
     private final BitSet relevance;
-    private final int size;
-    private final IntFunction<ID> idForIndex;
+    private final BitSet values;
 
     /**
-     * Constructs a new empty (all DONT_CARE) BitSetSignalSet.
+     * Creates an empty {@code BitSetSignalSet} (all signals DONT_CARE)
+     * for the given signal universe.
      *
-     * @param size        number of signals in the universe
-     * @param idForIndex  mapping from bit index to SignalId
+     * @param index mapping between {@link SignalId} and dense indices
      */
-    public BitSetSignalSet(int size, IntFunction<ID> idForIndex) {
-        if (size <= 0) {
-            throw new IllegalArgumentException("size must be positive");
-        }
-        this.size = size;
-        this.idForIndex = Objects.requireNonNull(idForIndex, "idForIndex");
-        this.values = new BitSet(size);
-        this.relevance = new BitSet(size);
+    public BitSetSignalSet(SignalIndex<ID> index) {
+        this.index = Objects.requireNonNull(index, "index");
+        this.relevance = new BitSet(index.size());
+        this.values = new BitSet(index.size());
     }
 
     /**
-     * Sets the state of a signal by index.
-     * Intended for builders and decoders.
+     * Sets the state of a signal.
+     * <p>
+     * This method is intended for use by builders, protocol decoders,
+     * and unit tests. Higher-level code should prefer immutable or
+     * copy-on-write usage patterns if required.
+     *
+     * @param id    signal identifier
+     * @param state desired signal state
      */
-    public void set(int index, SignalState state) {
-        if (index < 0 || index >= size) {
-            throw new IndexOutOfBoundsException();
-        }
+    public void set(ID id, SignalState state) {
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(state, "state");
+
+        int idx = index.indexOf(id);
+
         switch (state) {
             case DONT_CARE -> {
-                relevance.clear(index);
-                values.clear(index);
+                relevance.clear(idx);
+                values.clear(idx);
             }
             case FALSE -> {
-                relevance.set(index);
-                values.clear(index);
+                relevance.set(idx);
+                values.clear(idx);
             }
             case TRUE -> {
-                relevance.set(index);
-                values.set(index);
+                relevance.set(idx);
+                values.set(idx);
             }
         }
     }
@@ -97,13 +99,12 @@ public final class BitSetSignalSet<ID extends SignalId> implements SignalSet<ID>
     @Override
     public SignalState get(ID id) {
         Objects.requireNonNull(id, "id");
-        for (int i = 0; i < size; i++) {
-            if (id.equals(idForIndex.apply(i))) {
-                if (!relevance.get(i)) return SignalState.DONT_CARE;
-                return values.get(i) ? SignalState.TRUE : SignalState.FALSE;
-            }
+        int idx = index.indexOf(id);
+
+        if (!relevance.get(idx)) {
+            return SignalState.DONT_CARE;
         }
-        return SignalState.DONT_CARE;
+        return values.get(idx) ? SignalState.TRUE : SignalState.FALSE;
     }
 
     @Override
@@ -114,57 +115,45 @@ public final class BitSetSignalSet<ID extends SignalId> implements SignalSet<ID>
     @Override
     public Set<ID> relevantSignals() {
         return relevance.stream()
-                .mapToObj(idForIndex::apply)
+                .mapToObj(index::idAt)
                 .collect(Collectors.toSet());
     }
 
     @Override
     public Set<ID> allSignals() {
-        return IntStream.range(0, size)
-                .mapToObj(idForIndex)
-                .collect(Collectors.toSet());
+        return index.allSignals();
     }
 
     @Override
     public SignalSet<ID> merge(SignalSet<ID> other) {
         Objects.requireNonNull(other, "other");
 
-        BitSetSignalSet<ID> merged = new BitSetSignalSet<>(size, idForIndex);
-        merged.values.or(this.values);
-        merged.relevance.or(this.relevance);
+        BitSetSignalSet<ID> merged = new BitSetSignalSet<>(index);
 
+        // Start with this set's materialized bits
+        merged.relevance.or(this.relevance);
+        merged.values.or(this.values);
+
+        // Overlay relevant signals from the update
         for (ID id : other.relevantSignals()) {
-            SignalState state = other.get(id);
-            for (int i = 0; i < size; i++) {
-                if (id.equals(idForIndex.apply(i))) {
-                    merged.set(i, state);
-                }
-            }
+            merged.set(id, other.get(id));
         }
+
         return merged;
     }
 
     @Override
     public void assertMaterialized() {
-        if (relevance.cardinality() != size) {
-            throw new IllegalStateException("SignalSet is not materialized");
+        if (relevance.cardinality() != index.size()) {
+            throw new IllegalStateException("SignalSet is not fully materialized");
         }
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("{");
-        boolean first = true;
-        for (int i = 0; i < size; i++) {
-            if (relevance.get(i)) {
-                if (!first) sb.append(", ");
-                first = false;
-                sb.append(idForIndex.apply(i))
-                        .append('=')
-                        .append(values.get(i));
-            }
-        }
-        sb.append('}');
-        return sb.toString();
+        return IntStream.range(0, index.size())
+                .filter(relevance::get)
+                .mapToObj(i -> index.idAt(i) + "=" + values.get(i))
+                .collect(Collectors.joining(", ", "{", "}"));
     }
 }
