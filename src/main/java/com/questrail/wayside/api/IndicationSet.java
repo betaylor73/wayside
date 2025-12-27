@@ -1,5 +1,8 @@
 package com.questrail.wayside.api;
 
+import com.questrail.wayside.core.IndicationBitSetSignalSet;
+import com.questrail.wayside.mapping.SignalIndex;
+
 /**
  * IndicationSet
  * -----------------------------------------------------------------------------
@@ -10,9 +13,12 @@ package com.questrail.wayside.api;
  * logic controller. They may be partial, stale, or delayed.
  *
  * This interface exists solely for type safety and clarity. It introduces
- * no new behavior beyond {@link SignalSet}.
+ * no new behavior beyond {@link SignalSet} other than the ability to create
+ * an empty {@code IndicationSet}.
  */
 public interface IndicationSet extends SignalSet<IndicationId>
 {
-    // Marker specialization only
+    static IndicationSet empty(SignalIndex<IndicationId> index) {
+        return new IndicationBitSetSignalSet(index);
+    }
 }

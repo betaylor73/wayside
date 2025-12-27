@@ -90,6 +90,19 @@ public final class GenisysSlaveState
         );
     }
 
+    public static GenisysSlaveState failed(int stationAddress,
+                                           int failureCount,
+                                           Instant now) {
+        return new GenisysSlaveState(
+                stationAddress,
+                Phase.FAILED,
+                failureCount,
+                false,
+                false,
+                now
+        );
+    }
+
     // ---------------------------------------------------------------------
     // State transition helpers
     // ---------------------------------------------------------------------

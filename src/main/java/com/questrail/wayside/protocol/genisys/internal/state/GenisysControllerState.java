@@ -1,7 +1,6 @@
 package com.questrail.wayside.protocol.genisys.internal.state;
 
 import java.time.Instant;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -100,5 +99,12 @@ public final class GenisysControllerState
         Map<Integer, GenisysSlaveState> updated = new HashMap<>(this.slaves);
         updated.put(slaveState.stationAddress(), slaveState);
         return new GenisysControllerState(this.globalState, updated, now);
+    }
+
+    public static GenisysControllerState of(
+            GlobalState globalState,
+            Map<Integer, GenisysSlaveState> slaves,
+            Instant now) {
+        return new GenisysControllerState(globalState, slaves, now);
     }
 }
