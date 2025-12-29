@@ -73,9 +73,6 @@ public final class GenisysStateReducer
         if (event instanceof GenisysMessageEvent.MessageReceived e) {
             return onMessageReceived(state, e);
         }
-        if (event instanceof GenisysFrameEvent.FrameInvalid e) {
-            return onFrameInvalid(state, e);
-        }
         if (event instanceof GenisysTimeoutEvent.ResponseTimeout e) {
             return onResponseTimeout(state, e);
         }
@@ -130,13 +127,6 @@ public final class GenisysStateReducer
             case POLL -> handlePollResponse(state, updated, message, now);
             case FAILED -> handleFailedResponse(state, updated, message, now);
         };
-    }
-
-    private Result onFrameInvalid(GenisysControllerState state,
-                                  GenisysFrameEvent.FrameInvalid e) {
-        // Treat invalid frames as failures for the addressed slave if known.
-        // Since address may be unknown, we conservatively do nothing here.
-        return new Result(state, GenisysIntents.none());
     }
 
     private Result onResponseTimeout(GenisysControllerState state,
