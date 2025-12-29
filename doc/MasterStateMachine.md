@@ -211,13 +211,15 @@ Each slave proceeds through the following states during master operation.
 
 The state machine reacts to the following events:
 
-* `FrameReceived(frame)`
+* `MessageReceived(message)`
 * `ResponseTimeout`
 * `ControlIntentChanged`
 * `TransportUp`
 * `TransportDown`
 
 Events are serialized and processed one at a time.
+
+Frame reception and decoding occur below the state machine and do not directly drive state transitions.
 
 ---
 

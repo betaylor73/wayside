@@ -1,15 +1,19 @@
 package com.questrail.wayside.protocol.genisys.internal.state;
 
 import com.questrail.wayside.api.ControlId;
-import com.questrail.wayside.api.SignalId;
+import com.questrail.wayside.api.IndicationId;
+import com.questrail.wayside.api.IndicationSet;
+import com.questrail.wayside.api.SignalState;
+import com.questrail.wayside.protocol.genisys.model.GenisysMessage;
 import com.questrail.wayside.mapping.ArraySignalIndex;
 import com.questrail.wayside.mapping.SignalIndex;
 import com.questrail.wayside.protocol.genisys.internal.events.GenisysEvent;
-import com.questrail.wayside.protocol.genisys.internal.GenisysFrame;
-import com.questrail.wayside.protocol.genisys.internal.events.GenisysFrameEvent;
 import com.questrail.wayside.protocol.genisys.internal.events.GenisysTransportEvent;
 import com.questrail.wayside.protocol.genisys.internal.events.GenisysControlIntentEvent;
+import com.questrail.wayside.protocol.genisys.internal.events.GenisysMessageEvent;
 import com.questrail.wayside.api.ControlSet;
+import com.questrail.wayside.protocol.genisys.model.GenisysStationAddress;
+import com.questrail.wayside.protocol.genisys.model.IndicationData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,10 +46,18 @@ public class GenisysStateReducerTest {
     private GenisysStateReducer reducer;
     private Instant now;
     private SignalIndex<ControlId> controlIndex;
+    private SignalIndex<IndicationId> indicationIndex;
 
     final class TestControlId implements ControlId {
         private final int number;
         TestControlId(int number) { this.number = number; }
+        @Override public int number() { return number; }
+        @Override public Optional<String> label() { return Optional.empty(); }
+    }
+
+    final class TestIndicationId implements IndicationId {
+        private final int number;
+        TestIndicationId(int number) { this.number = number; }
         @Override public int number() { return number; }
         @Override public Optional<String> label() { return Optional.empty(); }
     }
@@ -59,6 +72,11 @@ public class GenisysStateReducerTest {
                 new TestControlId(2),
                 new TestControlId(3),
                 new TestControlId(4)
+        );
+
+        indicationIndex = new ArraySignalIndex<>(
+                new TestIndicationId(10),
+                new TestIndicationId(11)
         );
     }
 
@@ -106,8 +124,17 @@ public class GenisysStateReducerTest {
     void recallResponseTransitionsToSendControls() {
         GenisysControllerState state = initialStateWithSlaves(1);
 
-        GenisysFrame frame = new GenisysFrame((byte) 0xFD, 1, List.of(), false);
-        GenisysEvent event = new GenisysFrameEvent.FrameReceived(now, frame);
+        // The reducer now consumes semantic messages (decode-before-event).
+        // During RECALL, a valid slave->master response is typically IndicationData ($F2).
+        IndicationSet indications = IndicationSet.empty(indicationIndex);
+
+        GenisysMessage msg = new IndicationData(
+                GenisysStationAddress.of(1),
+                indications
+        );
+
+        // IMPORTANT: existing event signature is (timestamp, stationAddress, message).
+        GenisysEvent event = new GenisysMessageEvent.MessageReceived(now, 1, msg);
 
         GenisysStateReducer.Result result = reducer.apply(state, event);
 
@@ -146,8 +173,10 @@ public class GenisysStateReducerTest {
     // Failed slave recovery
     // ---------------------------------------------------------------------
 
+    // Recovery from FAILED depends only on receipt of a valid message,
+    // not on message type or content.
     @Test
-    void failedSlaveRecoversOnValidFrame() {
+    void failedSlaveRecoversOnValidMessage() {
         GenisysSlaveState failed = GenisysSlaveState.failed(1, 3, now);
 
         GenisysControllerState state = GenisysControllerState.of(
@@ -156,16 +185,27 @@ public class GenisysStateReducerTest {
                 now
         );
 
-        GenisysFrame frame = new GenisysFrame((byte) 0xFB, 1, List.of(), false);
-        GenisysEvent event = new GenisysFrameEvent.FrameReceived(now, frame);
+        // Any valid semantic slave->master message should trigger recovery.
+        // IndicationData is a canonical, always-valid slave response.
+        IndicationSet indications = IndicationSet.empty(indicationIndex);
+
+        GenisysMessage message = new IndicationData(
+                GenisysStationAddress.of(1),
+                indications
+        );
+
+        GenisysEvent event =
+                new GenisysMessageEvent.MessageReceived(now, 1, message);
 
         GenisysStateReducer.Result result = reducer.apply(state, event);
 
         GenisysSlaveState updated = result.newState().slaves().get(1);
+
         assertEquals(GenisysSlaveState.Phase.RECALL, updated.phase());
         assertEquals(0, updated.consecutiveFailures());
 
         assertTrue(result.intents().kinds()
                 .contains(GenisysIntents.Kind.SEND_RECALL));
     }
+
 }

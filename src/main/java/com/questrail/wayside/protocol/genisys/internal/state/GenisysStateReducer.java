@@ -1,8 +1,7 @@
 package com.questrail.wayside.protocol.genisys.internal.state;
 
-import com.questrail.wayside.protocol.genisys.internal.GenisysFrame;
 import com.questrail.wayside.protocol.genisys.internal.events.*;
-
+import com.questrail.wayside.protocol.genisys.model.GenisysMessage;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -71,8 +70,8 @@ public final class GenisysStateReducer
         if (event instanceof GenisysTransportEvent.TransportDown e) {
             return onTransportDown(state, e);
         }
-        if (event instanceof GenisysFrameEvent.FrameReceived e) {
-            return onFrameReceived(state, e);
+        if (event instanceof GenisysMessageEvent.MessageReceived e) {
+            return onMessageReceived(state, e);
         }
         if (event instanceof GenisysFrameEvent.FrameInvalid e) {
             return onFrameInvalid(state, e);
@@ -110,28 +109,26 @@ public final class GenisysStateReducer
         return new Result(state, GenisysIntents.suspendAll());
     }
 
-    private Result onFrameReceived(GenisysControllerState state,
-                                   GenisysFrameEvent.FrameReceived e) {
-        GenisysFrame frame = e.frame();
-        int addr = frame.stationAddress();
+    private Result onMessageReceived(GenisysControllerState state,
+                                     GenisysMessageEvent.MessageReceived e) {
+
+        final int addr = e.stationAddress();     // <- no dependency on message API
+        final GenisysMessage message = e.message();
 
         GenisysSlaveState slave = state.slaves().get(addr);
         if (slave == null) {
-            // Unknown slave; ignore safely.
             return new Result(state, GenisysIntents.none());
         }
 
         Instant now = e.timestamp();
 
-        // Successful reception resets failure counters.
         GenisysSlaveState updated = slave.withFailureReset(now);
 
-        // Delegate to phase-specific logic.
         return switch (slave.phase()) {
-            case RECALL -> handleRecallResponse(state, updated, frame, now);
-            case SEND_CONTROLS -> handleControlResponse(state, updated, frame, now);
-            case POLL -> handlePollResponse(state, updated, frame, now);
-            case FAILED -> handleFailedResponse(state, updated, frame, now);
+            case RECALL -> handleRecallResponse(state, updated, message, now);
+            case SEND_CONTROLS -> handleControlResponse(state, updated, message, now);
+            case POLL -> handlePollResponse(state, updated, message, now);
+            case FAILED -> handleFailedResponse(state, updated, message, now);
         };
     }
 
@@ -171,9 +168,8 @@ public final class GenisysStateReducer
 
     private Result handleRecallResponse(GenisysControllerState state,
                                         GenisysSlaveState slave,
-                                        GenisysFrame frame,
+                                        GenisysMessage msg,
                                         Instant now) {
-        // On successful recall response, transition to SEND_CONTROLS.
         GenisysSlaveState updated = slave.withPhase(
                 GenisysSlaveState.Phase.SEND_CONTROLS, now);
 
@@ -184,9 +180,8 @@ public final class GenisysStateReducer
 
     private Result handleControlResponse(GenisysControllerState state,
                                          GenisysSlaveState slave,
-                                         GenisysFrame frame,
+                                         GenisysMessage msg,
                                          Instant now) {
-        // Control delivery complete; clear pending flag and move to POLL.
         GenisysSlaveState updated = slave
                 .withControlPending(false, now)
                 .withPhase(GenisysSlaveState.Phase.POLL, now);
@@ -198,9 +193,12 @@ public final class GenisysStateReducer
 
     private Result handlePollResponse(GenisysControllerState state,
                                       GenisysSlaveState slave,
-                                      GenisysFrame frame,
+                                      GenisysMessage msg,
                                       Instant now) {
-        // Successful poll response; manage acknowledgment state.
+        // NOTE: soon we should base this on message type:
+        // - $F2 Indication Data => ackPending true
+        // - $F1 Acknowledge     => ackPending false
+        // This matches the GENISYS behavioral contract and master state machine docs.
         GenisysSlaveState updated = slave
                 .withAcknowledgmentPending(true, now);
 
@@ -211,9 +209,8 @@ public final class GenisysStateReducer
 
     private Result handleFailedResponse(GenisysControllerState state,
                                         GenisysSlaveState slave,
-                                        GenisysFrame frame,
+                                        GenisysMessage msg,
                                         Instant now) {
-        // Any valid response revives the slave into RECALL.
         GenisysSlaveState updated = slave
                 .withPhase(GenisysSlaveState.Phase.RECALL, now)
                 .withFailureReset(now);

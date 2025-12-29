@@ -128,6 +128,10 @@ This naturally maps to dense bit‑set representations.
 
 ## 5. Master operational behavior
 
+Clarification:
+In this implementation, protocol behavior is driven by semantic message receipt, not raw frame receipt. 
+References to “valid responses” in this document refer to successfully decoded, semantically valid GENISYS messages.
+
 ### 5.1 Startup and recovery (recall‑until‑active)
 
 On startup or recovery, the master:

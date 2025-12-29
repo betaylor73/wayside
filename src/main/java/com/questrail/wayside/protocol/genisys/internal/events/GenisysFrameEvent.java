@@ -1,6 +1,6 @@
 package com.questrail.wayside.protocol.genisys.internal.events;
 
-import com.questrail.wayside.protocol.genisys.internal.GenisysFrame;
+import com.questrail.wayside.protocol.genisys.internal.frame.GenisysFrame;
 
 import java.time.Instant;
 import java.util.Objects;
