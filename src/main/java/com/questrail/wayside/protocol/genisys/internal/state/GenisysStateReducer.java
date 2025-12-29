@@ -321,6 +321,12 @@ public final class GenisysStateReducer
                                         GenisysSlaveState slave,
                                         GenisysMessage msg,
                                         Instant now) {
+        // Per GENISYS: A full IndicationData image is the only valid response to Recall.
+        // If anything else is received, do not advance phase; remain in RECALL and emit no intents.
+        if (!(msg instanceof IndicationData)) {
+            return new Result(state, GenisysIntents.none());
+        }
+
         GenisysSlaveState updated = slave.withPhase(
                 GenisysSlaveState.Phase.SEND_CONTROLS, now);
 

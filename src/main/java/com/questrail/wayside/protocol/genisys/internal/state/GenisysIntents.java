@@ -76,10 +76,66 @@ public final class GenisysIntents
     }
 
     /**
+     * Returns true if this intent set contains no intent kinds.
+     */
+    public boolean isEmpty() {
+        return kinds.isEmpty();
+    }
+
+    /**
+     * Returns true if this intent set contains the given kind.
+     */
+    public boolean contains(Kind kind) {
+        return kinds.contains(kind);
+    }
+
+    /**
      * Returns the station address targeted by this intent, if applicable.
      */
-    public Integer targetStation() {
+    public java.util.Optional<Integer> targetStation() {
+        return java.util.Optional.ofNullable(targetStation);
+    }
+
+    /**
+     * Returns the raw station address targeted by this intent, or null if none.
+     * Intended for internal use where {@link java.util.Optional} would be awkward.
+     */
+    Integer rawTargetStation() {
         return targetStation;
+    }
+
+    // ---------------------------------------------------------------------
+    // Builder (test- and reducer-friendly)
+    // ---------------------------------------------------------------------
+
+    /**
+     * Returns a mutable builder for constructing {@code GenisysIntents}
+     * incrementally. Intended for tests and reducer assembly logic.
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static final class Builder {
+        private final EnumSet<Kind> kinds = EnumSet.noneOf(Kind.class);
+        private Integer targetStation;
+
+        private Builder() {}
+
+        public Builder add(Kind kind) {
+            Objects.requireNonNull(kind, "kind");
+            kinds.add(kind);
+            return this;
+        }
+
+        public Builder targetStation(int stationAddress) {
+            this.targetStation = stationAddress;
+            return this;
+        }
+
+        public GenisysIntents build() {
+            return new GenisysIntents(kinds, targetStation);
+        }
     }
 
     // ---------------------------------------------------------------------
@@ -172,3 +228,4 @@ public final class GenisysIntents
         return new GenisysIntents(merged, target);
     }
 }
+

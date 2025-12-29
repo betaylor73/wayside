@@ -230,7 +230,7 @@ public class GenisysStateReducerTest {
 
         assertTrue(result.intents().kinds()
                 .contains(GenisysIntents.Kind.SEND_CONTROLS));
-        assertEquals(1, result.intents().targetStation());
+        assertEquals(1, result.intents().targetStation().orElseThrow());
     }
 
     @Test
@@ -370,7 +370,7 @@ public class GenisysStateReducerTest {
 
         assertTrue(result.intents().kinds()
                 .contains(GenisysIntents.Kind.SEND_RECALL));
-        assertEquals(1, result.intents().targetStation());
+        assertEquals(1, result.intents().targetStation().orElseThrow());
     }
 
     // ---------------------------------------------------------------------
@@ -403,7 +403,7 @@ public class GenisysStateReducerTest {
         // Control delivery should be retried
         assertTrue(result.intents().kinds()
                 .contains(GenisysIntents.Kind.SEND_CONTROLS));
-        assertEquals(1, result.intents().targetStation());
+        assertEquals(1, result.intents().targetStation().orElseThrow());
     }
 
     @Test
@@ -437,7 +437,7 @@ public class GenisysStateReducerTest {
         // Recovery via recall should begin
         assertTrue(result.intents().kinds()
                 .contains(GenisysIntents.Kind.SEND_RECALL));
-        assertEquals(1, result.intents().targetStation());
+        assertEquals(1, result.intents().targetStation().orElseThrow());
     }
 
     // ---------------------------------------------------------------------
@@ -469,7 +469,7 @@ public class GenisysStateReducerTest {
         // Another recall attempt should be issued
         assertTrue(result.intents().kinds()
                 .contains(GenisysIntents.Kind.SEND_RECALL));
-        assertEquals(1, result.intents().targetStation());
+        assertEquals(1, result.intents().targetStation().orElseThrow());
     }
 
     // ---------------------------------------------------------------------
