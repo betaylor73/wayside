@@ -4,6 +4,9 @@
 > master implementation. It is intentionally protocol-centric but implementation
 > agnostic, and is designed to map cleanly onto an actor-style controller.
 >
+> This document is normative for the GENISYS master implementation and is intended to be directly reflected in the 
+> state reducer.
+> 
 > This document precedes any concrete wire-level or transport implementation.
 
 ---
@@ -118,11 +121,17 @@ Each slave proceeds through the following states during master operation.
 * Reset failure count
 * Transition to `SEND_CONTROLS`
 
-**On timeout or invalid response:**
+**On timeout:**
 
-* Increment failure count
-* Retry recall (up to failure threshold)
-* If threshold exceeded, mark slave failed and remain in `RECALL`
+* **Do not increment failure count** (the slave is already considered failed)
+* Remain in `RECALL`
+* Retry recall indefinitely
+
+**Notes:**
+
+* RECALL represents an explicit recovery loop
+* Timeouts during RECALL do not escalate failure state
+* Exit from RECALL is driven *only* by receipt of a valid semantic response
 
 ---
 
@@ -137,19 +146,25 @@ Each slave proceeds through the following states during master operation.
 * If no control changes are pending, transition immediately to `POLL`
 * Otherwise:
 
-  * Send `$FC` Control Data (and `$FE` Execute if checkback is enabled)
-  * Start response timer
+    * Send `$FC` Control Data (and `$FE` Execute if checkback is enabled)
+    * Start response timer
 
 **On valid response:**
 
-* Acknowledge any returned indication data
 * Clear pending control flag
+* Reset failure count
 * Transition to `POLL`
 
-**On timeout or invalid response:**
+**On timeout:**
 
-* Increment failure count
-* Retry or abandon control delivery based on failed-slave rules
+* Increment consecutive failure count
+* If failures < threshold:
+    * Remain in `SEND_CONTROLS`
+    * Retry control delivery
+* If failures == threshold:
+    * Transition to `FAILED`
+    * Preserve pending control state
+    * Initiate recovery via `RECALL`
 
 ---
 
@@ -178,10 +193,16 @@ Each slave proceeds through the following states during master operation.
 * Reset failure count
 * Transition to next slave
 
-**On timeout or invalid response:**
+**On timeout:**
 
-* Increment failure count
-* Retry polling or transition to `FAILED`
+* Increment consecutive failure count
+* If failures < threshold:
+    * Remain in `POLL`
+    * Retry polling
+* If failures == threshold:
+    * Transition to `FAILED`
+    * Clear acknowledgment pending
+    * Initiate recovery via `RECALL`
 
 ---
 
@@ -193,17 +214,22 @@ Each slave proceeds through the following states during master operation.
 
 **Entry condition:**
 
-* Failure count exceeds threshold
+* Failure count reaches threshold during `POLL` or `SEND_CONTROLS`
 
 **Behavior:**
 
-* Periodically attempt recall
-* Send new control updates once (without retry)
+* Slave is considered out of protocol sync
+* No normal polling or control delivery occurs
+* Recovery is attempted via transition to `RECALL`
 
 **Exit condition:**
 
-* Valid response received
-* Slave transitions back to `RECALL`
+* Receipt of any valid semantic slave response
+
+**On exit:**
+
+* Reset failure count
+* Transition to `RECALL`
 
 ---
 

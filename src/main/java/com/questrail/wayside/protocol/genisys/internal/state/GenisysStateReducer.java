@@ -114,23 +114,34 @@ public final class GenisysStateReducer
     private Result onMessageReceived(GenisysControllerState state,
                                      GenisysMessageEvent.MessageReceived e) {
 
-        final int addr = e.stationAddress();     // <- no dependency on message API
+        final int addr = e.stationAddress();     // event carries the semantic station identity
         final GenisysMessage message = e.message();
 
         GenisysSlaveState slave = state.slaves().get(addr);
         if (slave == null) {
+            // Message for an unknown/unconfigured station is ignored.
             return new Result(state, GenisysIntents.none());
         }
 
-        Instant now = e.timestamp();
+        final Instant now = e.timestamp();
 
+        /*
+         * Any successfully decoded semantic message counts as "activity" and resets
+         * the consecutive failure counter for the associated slave.
+         *
+         * This is an architectural boundary decision:
+         *   - decode failures do not generate reducer events (so they never reach here)
+         *   - only semantic message receipt can reset failure tracking
+         */
         GenisysSlaveState updated = slave.withFailureReset(now);
+        GenisysControllerState stateAfterReset = state.withSlaveState(updated, now);
 
-        return switch (slave.phase()) {
-            case RECALL -> handleRecallResponse(state, updated, message, now);
-            case SEND_CONTROLS -> handleControlResponse(state, updated, message, now);
-            case POLL -> handlePollResponse(state, updated, message, now);
-            case FAILED -> handleFailedResponse(state, updated, message, now);
+        // Phase-specific message handling remains semantic-only.
+        return switch (updated.phase()) {
+            case RECALL -> handleRecallResponse(stateAfterReset, updated, message, now);
+            case SEND_CONTROLS -> handleControlResponse(stateAfterReset, updated, message, now);
+            case POLL -> handlePollResponse(stateAfterReset, updated, message, now);
+            case FAILED -> handleFailedResponse(stateAfterReset, updated, message, now);
         };
     }
 
@@ -139,14 +150,11 @@ public final class GenisysStateReducer
         /*
          * ResponseTimeout semantics (semantic-only, reducer-visible):
          *
-         * A ResponseTimeout indicates that a specific slave did not produce a valid
-         * *semantic* response within the expected time window. Importantly:
-         *   - This event is injected by higher layers (scheduler/driver).
-         *   - The reducer does NOT infer timeouts from I/O or frames.
-         *   - The reducer updates only semantic state and emits intents.
+         * A ResponseTimeout indicates that a specific slave did not produce an expected
+         * semantic response within the allowed time window.
          *
-         * We start by making timeout handling exhaustive for the POLL phase, since
-         * POLL is the steady-state phase and the most common source of timeouts.
+         * The reducer does not infer timeouts from I/O. Timeouts are modeled by higher
+         * layers (scheduler/driver) and injected as reducer events.
          */
 
         final int addr = e.stationAddress();
@@ -158,63 +166,97 @@ public final class GenisysStateReducer
             return new Result(state, GenisysIntents.none());
         }
 
-        switch (slave.phase()) {
+        return switch (slave.phase()) {
 
             case POLL -> {
                 /*
                  * POLL timeout semantics (GENISYS):
                  *
-                 * A timeout during POLL is treated equivalently to an invalid or
-                 * missing response. The master:
-                 *   - increments the consecutive failure count for the slave
-                 *   - retries polling up to a fixed threshold
-                 *   - transitions the slave to FAILED once the threshold is reached
+                 * A timeout during POLL is treated equivalently to an invalid/missing
+                 * response. The master:
+                 *   - increments consecutiveFailures
+                 *   - retries up to a fixed threshold
+                 *   - transitions to FAILED once the threshold is reached
                  */
-
                 GenisysSlaveState incremented = slave.withFailureIncremented(now);
 
-                // GENISYS protocol rule: a slave is considered FAILED after
-                // three consecutive communication failures.
-                // TODO: make this threshold configurable?
+                // Protocol rule: FAILED after three consecutive failures.
                 final int failureThreshold = 3;
 
                 if (incremented.consecutiveFailures() < failureThreshold) {
-                    // Below threshold: remain in POLL and retry the current step.
-                    GenisysControllerState newState =
-                            state.withSlaveState(incremented, now);
-
-                    return new Result(newState, GenisysIntents.retryCurrent());
+                    GenisysControllerState newState = state.withSlaveState(incremented, now);
+                    yield new Result(newState, GenisysIntents.retryCurrent());
                 }
 
-                /*
-                 * Failure threshold reached:
-                 *
-                 * Transition the slave to FAILED. Entering FAILED represents a
-                 * loss of protocol continuity; we clear acknowledgmentPending but
-                 * intentionally leave controlPending untouched.
-                 */
+                // Threshold reached: enter FAILED and begin recovery via RECALL.
                 GenisysSlaveState failed = incremented
                         .withPhase(GenisysSlaveState.Phase.FAILED, now)
                         .withAcknowledgmentPending(false, now);
 
-                GenisysControllerState newState =
-                        state.withSlaveState(failed, now);
+                GenisysControllerState newState = state.withSlaveState(failed, now);
+                yield new Result(newState, GenisysIntents.sendRecall(addr));
+            }
 
-                // Entering FAILED initiates recovery via RECALL.
-                return new Result(newState, GenisysIntents.sendRecall(addr));
+            case RECALL -> {
+                /*
+                 * RECALL timeout semantics (GENISYS):
+                 *
+                 * RECALL is entered as part of recovery after a slave is declared FAILED.
+                 * A timeout here means the slave did not respond to the recall attempt.
+                 *
+                 * We intentionally:
+                 *   - do NOT increment consecutiveFailures (already failed)
+                 *   - do NOT change phase (remain in RECALL)
+                 *   - DO attempt recall again
+                 */
+                yield new Result(state, GenisysIntents.sendRecall(addr));
+            }
+
+            case SEND_CONTROLS -> {
+                /*
+                 * SEND_CONTROLS timeout semantics (GENISYS):
+                 *
+                 * SEND_CONTROLS represents an attempt to deliver control updates
+                 * to a slave that has already successfully responded to recall.
+                 *
+                 * A timeout here indicates that control delivery failed.
+                 * The protocol semantics are:
+                 *   - increment consecutiveFailures
+                 *   - if below threshold: retry SEND_CONTROLS
+                 *   - if threshold reached: transition to FAILED and begin RECALL
+                 *
+                 * This mirrors POLL failure semantics, but is scoped specifically
+                 * to the control-delivery phase.
+                 */
+                GenisysSlaveState incremented = slave.withFailureIncremented(now);
+
+                final int failureThreshold = 3;
+
+                if (incremented.consecutiveFailures() < failureThreshold) {
+                    GenisysControllerState newState = state.withSlaveState(incremented, now);
+                    yield new Result(newState, GenisysIntents.sendControls(addr));
+                }
+
+                // Threshold reached: control delivery failed repeatedly; re-enter recovery.
+                GenisysSlaveState failed = incremented
+                        .withPhase(GenisysSlaveState.Phase.FAILED, now)
+                        .withAcknowledgmentPending(false, now)
+                        .withControlPending(true, now);
+
+                GenisysControllerState newState = state.withSlaveState(failed, now);
+                yield new Result(newState, GenisysIntents.sendRecall(addr));
             }
 
             default -> {
                 /*
-                 * Timeout handling for non-POLL phases is intentionally conservative
-                 * at this stage. Until exhaustiveness is completed for each phase,
-                 * we preserve existing behavior:
-                 *   - do not mutate slave state
-                 *   - request a retry of the current protocol action
+                 * Timeout handling for other phases (SEND_CONTROLS, FAILED) will be
+                 * made exhaustive next. Until then we preserve conservative behavior:
+                 *   - no state mutation
+                 *   - request retry of the current protocol step
                  */
-                return new Result(state, GenisysIntents.retryCurrent());
+                yield new Result(state, GenisysIntents.retryCurrent());
             }
-        }
+        };
     }
 
     private Result onControlIntentChanged(GenisysControllerState state,

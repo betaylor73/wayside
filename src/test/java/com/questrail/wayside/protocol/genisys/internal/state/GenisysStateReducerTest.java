@@ -43,19 +43,19 @@ public class GenisysStateReducerTest {
     private SignalIndex<ControlId> controlIndex;
     private SignalIndex<IndicationId> indicationIndex;
 
-    final class TestControlId implements ControlId {
-        private final int number;
-        TestControlId(int number) { this.number = number; }
-        @Override public int number() { return number; }
-        @Override public Optional<String> label() { return Optional.empty(); }
-    }
+    record TestControlId(int number) implements ControlId {
+        @Override
+        public Optional<String> label() {
+            return Optional.empty();
+        }
+        }
 
-    final class TestIndicationId implements IndicationId {
-        private final int number;
-        TestIndicationId(int number) { this.number = number; }
-        @Override public int number() { return number; }
-        @Override public Optional<String> label() { return Optional.empty(); }
-    }
+    record TestIndicationId(int number) implements IndicationId {
+        @Override
+        public Optional<String> label() {
+            return Optional.empty();
+        }
+        }
 
     @BeforeEach
     void setUp() {
@@ -276,6 +276,105 @@ public class GenisysStateReducerTest {
         assertEquals(GenisysSlaveState.Phase.FAILED, failed.phase());
         assertEquals(3, failed.consecutiveFailures());
 
+        assertTrue(result.intents().kinds()
+                .contains(GenisysIntents.Kind.SEND_RECALL));
+        assertEquals(1, result.intents().targetStation());
+    }
+
+    // ---------------------------------------------------------------------
+    // SEND_CONTROLS timeout handling
+    // ---------------------------------------------------------------------
+
+    @Test
+    void sendControlsTimeoutRetriesControlDelivery() {
+        // Start with a slave already in SEND_CONTROLS phase
+        GenisysSlaveState sending = GenisysSlaveState.initial(1)
+                .withPhase(GenisysSlaveState.Phase.SEND_CONTROLS, now)
+                .withControlPending(true, now);
+
+        GenisysControllerState state = GenisysControllerState.of(
+                GenisysControllerState.GlobalState.RUNNING,
+                Map.of(1, sending),
+                now
+        );
+
+        // Inject a SEND_CONTROLS timeout
+        GenisysEvent timeout = new GenisysTimeoutEvent.ResponseTimeout(now, 1);
+        GenisysStateReducer.Result result = reducer.apply(state, timeout);
+
+        GenisysSlaveState updated = result.newState().slaves().get(1);
+
+        // Failure count increments, phase remains SEND_CONTROLS
+        assertEquals(1, updated.consecutiveFailures());
+        assertEquals(GenisysSlaveState.Phase.SEND_CONTROLS, updated.phase());
+
+        // Control delivery should be retried
+        assertTrue(result.intents().kinds()
+                .contains(GenisysIntents.Kind.SEND_CONTROLS));
+        assertEquals(1, result.intents().targetStation());
+    }
+
+    @Test
+    void sendControlsTimeoutTransitionsToFailedAfterThreshold() {
+        // Start with a slave already in SEND_CONTROLS phase
+        GenisysSlaveState sending = GenisysSlaveState.initial(1)
+                .withPhase(GenisysSlaveState.Phase.SEND_CONTROLS, now)
+                .withControlPending(true, now);
+
+        GenisysControllerState state = GenisysControllerState.of(
+                GenisysControllerState.GlobalState.RUNNING,
+                Map.of(1, sending),
+                now
+        );
+
+        // Apply three consecutive SEND_CONTROLS timeouts
+        state = reducer.apply(state, new GenisysTimeoutEvent.ResponseTimeout(now, 1))
+                .newState();
+        state = reducer.apply(state, new GenisysTimeoutEvent.ResponseTimeout(now, 1))
+                .newState();
+
+        GenisysStateReducer.Result result = reducer.apply(
+                state, new GenisysTimeoutEvent.ResponseTimeout(now, 1));
+
+        GenisysSlaveState failed = result.newState().slaves().get(1);
+
+        assertEquals(GenisysSlaveState.Phase.FAILED, failed.phase());
+        assertEquals(3, failed.consecutiveFailures());
+        assertTrue(failed.controlPending());
+
+        // Recovery via recall should begin
+        assertTrue(result.intents().kinds()
+                .contains(GenisysIntents.Kind.SEND_RECALL));
+        assertEquals(1, result.intents().targetStation());
+    }
+
+    // ---------------------------------------------------------------------
+    // RECALL timeout handling
+    // ---------------------------------------------------------------------
+
+    @Test
+    void recallTimeoutRetriesRecallWithoutEscalation() {
+        // Start with a slave already in RECALL phase
+        GenisysSlaveState recalling = GenisysSlaveState.initial(1)
+                .withPhase(GenisysSlaveState.Phase.RECALL, now);
+
+        GenisysControllerState state = GenisysControllerState.of(
+                GenisysControllerState.GlobalState.RUNNING,
+                Map.of(1, recalling),
+                now
+        );
+
+        // Inject a RECALL timeout
+        GenisysEvent timeout = new GenisysTimeoutEvent.ResponseTimeout(now, 1);
+        GenisysStateReducer.Result result = reducer.apply(state, timeout);
+
+        GenisysSlaveState updated = result.newState().slaves().get(1);
+
+        // Remain in RECALL and do not increment failure count
+        assertEquals(GenisysSlaveState.Phase.RECALL, updated.phase());
+        assertEquals(recalling.consecutiveFailures(), updated.consecutiveFailures());
+
+        // Another recall attempt should be issued
         assertTrue(result.intents().kinds()
                 .contains(GenisysIntents.Kind.SEND_RECALL));
         assertEquals(1, result.intents().targetStation());

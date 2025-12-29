@@ -103,6 +103,8 @@ public final class GenisysSlaveState
         );
     }
 
+    // TODO: add factory helpers for other states
+
     // ---------------------------------------------------------------------
     // State transition helpers
     // ---------------------------------------------------------------------
