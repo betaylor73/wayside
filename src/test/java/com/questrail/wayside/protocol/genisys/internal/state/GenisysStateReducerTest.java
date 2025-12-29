@@ -3,15 +3,11 @@ package com.questrail.wayside.protocol.genisys.internal.state;
 import com.questrail.wayside.api.ControlId;
 import com.questrail.wayside.api.IndicationId;
 import com.questrail.wayside.api.IndicationSet;
-import com.questrail.wayside.api.SignalState;
+import com.questrail.wayside.protocol.genisys.internal.events.*;
 import com.questrail.wayside.protocol.genisys.model.Acknowledge;
 import com.questrail.wayside.protocol.genisys.model.GenisysMessage;
 import com.questrail.wayside.mapping.ArraySignalIndex;
 import com.questrail.wayside.mapping.SignalIndex;
-import com.questrail.wayside.protocol.genisys.internal.events.GenisysEvent;
-import com.questrail.wayside.protocol.genisys.internal.events.GenisysTransportEvent;
-import com.questrail.wayside.protocol.genisys.internal.events.GenisysControlIntentEvent;
-import com.questrail.wayside.protocol.genisys.internal.events.GenisysMessageEvent;
 import com.questrail.wayside.api.ControlSet;
 import com.questrail.wayside.protocol.genisys.model.GenisysStationAddress;
 import com.questrail.wayside.protocol.genisys.model.IndicationData;
@@ -209,6 +205,80 @@ public class GenisysStateReducerTest {
         GenisysStateReducer.Result result = reducer.apply(afterControl.newState(), pollDataEvent);
 
         assertTrue(result.newState().slaves().get(1).acknowledgmentPending());
+    }
+
+    // ---------------------------------------------------------------------
+    // POLL timeout handling
+    // ---------------------------------------------------------------------
+
+    @Test
+    void pollTimeoutIncrementsFailureAndRetries() {
+        // Drive slave into POLL phase
+        GenisysControllerState state = initialStateWithSlaves(1);
+
+        IndicationSet indications = IndicationSet.empty(indicationIndex);
+        GenisysEvent recallEvent = new GenisysMessageEvent.MessageReceived(
+                now, 1, new IndicationData(GenisysStationAddress.of(1), indications));
+        state = reducer.apply(state, recallEvent).newState();
+
+        GenisysEvent controlEvent = new GenisysMessageEvent.MessageReceived(
+                now, 1, new Acknowledge(GenisysStationAddress.of(1)));
+        state = reducer.apply(state, controlEvent).newState();
+
+        assertEquals(GenisysSlaveState.Phase.POLL,
+                state.slaves().get(1).phase());
+
+        // Inject a POLL timeout
+        GenisysEvent timeout = new GenisysTimeoutEvent.ResponseTimeout(now, 1);
+        GenisysStateReducer.Result result = reducer.apply(state, timeout);
+
+        GenisysSlaveState updated = result.newState().slaves().get(1);
+
+        // Failure count increments, phase remains POLL
+        assertEquals(1, updated.consecutiveFailures());
+        assertEquals(GenisysSlaveState.Phase.POLL, updated.phase());
+
+        // Reducer requests retry of current protocol step
+        assertTrue(result.intents().kinds()
+                .contains(GenisysIntents.Kind.RETRY_CURRENT));
+    }
+
+    @Test
+    void pollTimeoutTransitionsToFailedAfterThreshold() {
+        // Drive slave into POLL phase
+        GenisysControllerState state = initialStateWithSlaves(1);
+
+        IndicationSet indications = IndicationSet.empty(indicationIndex);
+        state = reducer.apply(state,
+                        new GenisysMessageEvent.MessageReceived(
+                                now, 1, new IndicationData(GenisysStationAddress.of(1), indications)))
+                .newState();
+
+        state = reducer.apply(state,
+                        new GenisysMessageEvent.MessageReceived(
+                                now, 1, new Acknowledge(GenisysStationAddress.of(1))))
+                .newState();
+
+        assertEquals(GenisysSlaveState.Phase.POLL,
+                state.slaves().get(1).phase());
+
+        // Apply three consecutive POLL timeouts
+        state = reducer.apply(state, new GenisysTimeoutEvent.ResponseTimeout(now, 1))
+                .newState();
+        state = reducer.apply(state, new GenisysTimeoutEvent.ResponseTimeout(now, 1))
+                .newState();
+
+        GenisysStateReducer.Result result = reducer.apply(
+                state, new GenisysTimeoutEvent.ResponseTimeout(now, 1));
+
+        GenisysSlaveState failed = result.newState().slaves().get(1);
+
+        assertEquals(GenisysSlaveState.Phase.FAILED, failed.phase());
+        assertEquals(3, failed.consecutiveFailures());
+
+        assertTrue(result.intents().kinds()
+                .contains(GenisysIntents.Kind.SEND_RECALL));
+        assertEquals(1, result.intents().targetStation());
     }
 
     // ---------------------------------------------------------------------

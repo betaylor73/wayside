@@ -136,9 +136,85 @@ public final class GenisysStateReducer
 
     private Result onResponseTimeout(GenisysControllerState state,
                                      GenisysTimeoutEvent.ResponseTimeout e) {
-        // Timeouts increment failure counters and may drive slaves into FAILED.
-        // For simplicity at this level, we emit a retry intent.
-        return new Result(state, GenisysIntents.retryCurrent());
+        /*
+         * ResponseTimeout semantics (semantic-only, reducer-visible):
+         *
+         * A ResponseTimeout indicates that a specific slave did not produce a valid
+         * *semantic* response within the expected time window. Importantly:
+         *   - This event is injected by higher layers (scheduler/driver).
+         *   - The reducer does NOT infer timeouts from I/O or frames.
+         *   - The reducer updates only semantic state and emits intents.
+         *
+         * We start by making timeout handling exhaustive for the POLL phase, since
+         * POLL is the steady-state phase and the most common source of timeouts.
+         */
+
+        final int addr = e.stationAddress();
+        final Instant now = e.timestamp();
+
+        GenisysSlaveState slave = state.slaves().get(addr);
+        if (slave == null) {
+            // Timeout for an unknown/unconfigured station is ignored.
+            return new Result(state, GenisysIntents.none());
+        }
+
+        switch (slave.phase()) {
+
+            case POLL -> {
+                /*
+                 * POLL timeout semantics (GENISYS):
+                 *
+                 * A timeout during POLL is treated equivalently to an invalid or
+                 * missing response. The master:
+                 *   - increments the consecutive failure count for the slave
+                 *   - retries polling up to a fixed threshold
+                 *   - transitions the slave to FAILED once the threshold is reached
+                 */
+
+                GenisysSlaveState incremented = slave.withFailureIncremented(now);
+
+                // GENISYS protocol rule: a slave is considered FAILED after
+                // three consecutive communication failures.
+                // TODO: make this threshold configurable?
+                final int failureThreshold = 3;
+
+                if (incremented.consecutiveFailures() < failureThreshold) {
+                    // Below threshold: remain in POLL and retry the current step.
+                    GenisysControllerState newState =
+                            state.withSlaveState(incremented, now);
+
+                    return new Result(newState, GenisysIntents.retryCurrent());
+                }
+
+                /*
+                 * Failure threshold reached:
+                 *
+                 * Transition the slave to FAILED. Entering FAILED represents a
+                 * loss of protocol continuity; we clear acknowledgmentPending but
+                 * intentionally leave controlPending untouched.
+                 */
+                GenisysSlaveState failed = incremented
+                        .withPhase(GenisysSlaveState.Phase.FAILED, now)
+                        .withAcknowledgmentPending(false, now);
+
+                GenisysControllerState newState =
+                        state.withSlaveState(failed, now);
+
+                // Entering FAILED initiates recovery via RECALL.
+                return new Result(newState, GenisysIntents.sendRecall(addr));
+            }
+
+            default -> {
+                /*
+                 * Timeout handling for non-POLL phases is intentionally conservative
+                 * at this stage. Until exhaustiveness is completed for each phase,
+                 * we preserve existing behavior:
+                 *   - do not mutate slave state
+                 *   - request a retry of the current protocol action
+                 */
+                return new Result(state, GenisysIntents.retryCurrent());
+            }
+        }
     }
 
     private Result onControlIntentChanged(GenisysControllerState state,
@@ -245,6 +321,6 @@ public final class GenisysStateReducer
 
         GenisysControllerState newState = state.withSlaveState(updated, now);
 
-        return new Result(newState, GenisysIntents.beginRecall(updated.stationAddress()));
+        return new Result(newState, GenisysIntents.sendRecall(updated.stationAddress()));
     }
 }

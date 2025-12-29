@@ -17,8 +17,15 @@ public sealed interface GenisysTimeoutEvent extends GenisysEvent
      * the allowed time window.
      */
     final class ResponseTimeout extends GenisysEvent.Base implements GenisysTimeoutEvent {
-        public ResponseTimeout(Instant timestamp) {
+        private final int stationAddress;
+
+        public ResponseTimeout(Instant timestamp, int stationAddress) {
             super(timestamp);
+            this.stationAddress = stationAddress;
+        }
+
+        public int stationAddress() {
+            return stationAddress;
         }
     }
 }

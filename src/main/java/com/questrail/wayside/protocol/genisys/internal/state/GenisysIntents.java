@@ -124,7 +124,7 @@ public final class GenisysIntents
     /**
      * Send a recall message to the specified slave.
      */
-    public static GenisysIntents beginRecall(int stationAddress) {
+    public static GenisysIntents sendRecall(int stationAddress) {
         return new GenisysIntents(EnumSet.of(Kind.SEND_RECALL), stationAddress);
     }
 
