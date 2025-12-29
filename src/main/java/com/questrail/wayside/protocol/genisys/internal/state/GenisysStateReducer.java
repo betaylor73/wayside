@@ -67,6 +67,30 @@ public final class GenisysStateReducer
         Objects.requireNonNull(state, "state");
         Objects.requireNonNull(event, "event");
 
+        /*
+         * Transport gating policy (global):
+         *
+         * In a connection-less transport (e.g. UDP), "transport down" is not inferred
+         * from slave silence; it is a *local* indication that the master cannot reliably
+         * perform I/O (socket not bound, interface down, administrative inhibit, etc.).
+         *
+         * While TRANSPORT_DOWN:
+         *   - the reducer must not allow protocol progress
+         *   - no slave state may mutate (no phase changes, no failure increments/resets)
+         *   - no protocol intents are emitted
+         *   - only TransportUp is honored, which forces INITIALIZING (recall/sync)
+         */
+        if (state.globalState() == GenisysControllerState.GlobalState.TRANSPORT_DOWN) {
+            if (event instanceof GenisysTransportEvent.TransportUp e) {
+                return onTransportUp(state, e);
+            }
+            if (event instanceof GenisysTransportEvent.TransportDown e) {
+                // Idempotent: already down; re-emit suspend to reinforce higher-layer gating.
+                return onTransportDown(state, e);
+            }
+            return new Result(state, GenisysIntents.none());
+        }
+
         // Dispatch based on event type. This is intentionally explicit;
         // protocol behavior should be readable, not clever.
         if (event instanceof GenisysTransportEvent.TransportUp e) {
@@ -106,9 +130,23 @@ public final class GenisysStateReducer
 
     private Result onTransportDown(GenisysControllerState state,
                                    GenisysTransportEvent.TransportDown e) {
-        // Loss of transport invalidates protocol progress.
-        // Remain in current state but suppress protocol activity.
-        return new Result(state, GenisysIntents.suspendAll());
+        /*
+         * TransportDown is a *local* gate, not a per-slave protocol signal.
+         *
+         * We record the global state transition so that subsequent protocol events
+         * (timeouts, messages, control intent changes) are ignored until TransportUp.
+         *
+         * IMPORTANT:
+         * - We do not mutate any per-slave state here.
+         * - We do not attempt to "fail" slaves. Slave failure is protocol-level and
+         *   is modeled via ResponseTimeout while transport is RUNNING.
+         */
+        GenisysControllerState newState = state.withGlobalState(
+                GenisysControllerState.GlobalState.TRANSPORT_DOWN,
+                e.timestamp());
+
+        // Higher layers should suspend protocol activity immediately.
+        return new Result(newState, GenisysIntents.suspendAll());
     }
 
     private Result onMessageReceived(GenisysControllerState state,

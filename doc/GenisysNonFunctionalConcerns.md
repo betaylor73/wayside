@@ -167,7 +167,70 @@ Configuration changes must be observable in the same sense as protocol events.
 
 ---
 
-## 5. Relationship to Other Architecture Documents
+## 5. Transport Availability and Gating
+
+### 5.1 Transport Availability Is a Local Concern (Normative)
+
+Transport availability in GENISYS is a **local, master-side architectural concern**, not a protocol-level concept.
+
+In particular:
+
+- GENISYS does **not** assume a connection-oriented transport
+- GENISYS slaves do **not** emit unsolicited traffic
+- Silence from a slave is a **normal protocol condition**, not evidence of transport failure
+
+As a result, transport availability **must not be inferred** from:
+
+- Missing slave responses
+- Response timeouts
+- Repeated protocol failures
+
+Those conditions are handled exclusively by the **protocol state machine** (see `MasterStateMachine.md`).
+
+---
+
+### 5.2 Meaning of `TransportDown` and `TransportUp` (Normative)
+
+`TransportDown` and `TransportUp` events represent **master-local I/O readiness**, such as:
+
+- Inability to bind or use a socket
+- Network interface unavailability
+- Administrative inhibit or pause
+- Explicit enable/disable of protocol execution
+
+They do **not** represent slave reachability or protocol health.
+
+---
+
+### 5.3 Transport-Down Gating Policy (Normative)
+
+When the global controller state is `TRANSPORT_DOWN`:
+
+- All protocol activity is **globally suspended**
+- Reducers **must not mutate per-slave protocol state**
+- Reducers **must ignore** the following events:
+    - `MessageReceived`
+    - `ResponseTimeout`
+    - `ControlIntentChanged`
+- No protocol intents (poll, recall, control delivery) may be emitted
+
+This gating is enforced **centrally** in the reducer and applies uniformly to all slaves.
+
+---
+
+### 5.4 Recovery on `TransportUp` (Normative)
+
+On receipt of `TransportUp`:
+
+- The controller transitions to global state `INITIALIZING`
+- Protocol execution resumes only after reinitialization
+- Full protocol re-synchronization is forced via per-slave `RECALL`
+
+This avoids attempting to resume protocol execution based on potentially invalid assumptions made prior to transport loss.
+
+---
+
+## 6. Relationship to Other Architecture Documents
 
 This document complements and constrains the following:
 
@@ -180,7 +243,7 @@ Where conflicts arise, **this document governs non-functional behavior**.
 
 ---
 
-## 6. Future Non-Functional Concerns (Reserved)
+## 7. Future Non-Functional Concerns (Reserved)
 
 The following concerns are expected to be captured here in future revisions:
 
@@ -192,7 +255,7 @@ The following concerns are expected to be captured here in future revisions:
 
 ---
 
-## 7. Summary (Normative)
+## 8. Summary (Normative)
 
 - Observability is a **design property**, not a logging strategy
 - Configuration is **semantic input**, not file parsing

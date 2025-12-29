@@ -107,8 +107,100 @@ public class GenisysStateReducerTest {
         GenisysEvent event = new GenisysTransportEvent.TransportDown(now);
         GenisysStateReducer.Result result = reducer.apply(state, event);
 
+        assertEquals(GenisysControllerState.GlobalState.TRANSPORT_DOWN,
+                result.newState().globalState());
+
         assertTrue(result.intents().kinds()
                 .contains(GenisysIntents.Kind.SUSPEND_ALL));
+    }
+
+    @Test
+    void messageReceivedIsIgnoredWhileTransportDown() {
+        // TransportDown is a global gate. While down, the reducer must not mutate slave state.
+        GenisysSlaveState polling = GenisysSlaveState.initial(1)
+                .withPhase(GenisysSlaveState.Phase.POLL, now)
+                .withAcknowledgmentPending(true, now)
+                .withFailureIncremented(now);
+
+        GenisysControllerState down = GenisysControllerState.of(
+                GenisysControllerState.GlobalState.TRANSPORT_DOWN,
+                Map.of(1, polling),
+                now
+        );
+
+        // A valid semantic message would normally reset failures and update ackPending.
+        // While transport is down, it must be ignored.
+        IndicationSet indications = IndicationSet.empty(indicationIndex);
+        GenisysEvent msg = new GenisysMessageEvent.MessageReceived(
+                now,
+                1,
+                new IndicationData(GenisysStationAddress.of(1), indications)
+        );
+
+        GenisysStateReducer.Result result = reducer.apply(down, msg);
+
+        assertSame(down, result.newState());
+        assertEquals(0, result.intents().kinds().size());
+    }
+
+    @Test
+    void responseTimeoutIsIgnoredWhileTransportDown() {
+        GenisysSlaveState polling = GenisysSlaveState.initial(1)
+                .withPhase(GenisysSlaveState.Phase.POLL, now);
+
+        GenisysControllerState down = GenisysControllerState.of(
+                GenisysControllerState.GlobalState.TRANSPORT_DOWN,
+                Map.of(1, polling),
+                now
+        );
+
+        GenisysEvent timeout = new GenisysTimeoutEvent.ResponseTimeout(now, 1);
+        GenisysStateReducer.Result result = reducer.apply(down, timeout);
+
+        assertSame(down, result.newState());
+        assertEquals(0, result.intents().kinds().size());
+    }
+
+    @Test
+    void controlIntentIsIgnoredWhileTransportDown() {
+        GenisysSlaveState polling = GenisysSlaveState.initial(1)
+                .withPhase(GenisysSlaveState.Phase.POLL, now)
+                .withControlPending(false, now);
+
+        GenisysControllerState down = GenisysControllerState.of(
+                GenisysControllerState.GlobalState.TRANSPORT_DOWN,
+                Map.of(1, polling),
+                now
+        );
+
+        ControlSet delta = ControlSet.empty(controlIndex);
+        ControlSet full = ControlSet.empty(controlIndex);
+
+        GenisysEvent event = new GenisysControlIntentEvent.ControlIntentChanged(
+                now, delta, full);
+
+        GenisysStateReducer.Result result = reducer.apply(down, event);
+
+        assertSame(down, result.newState());
+        assertEquals(0, result.intents().kinds().size());
+    }
+
+    @Test
+    void transportUpFromTransportDownForcesInitialization() {
+        GenisysControllerState down = GenisysControllerState.of(
+                GenisysControllerState.GlobalState.TRANSPORT_DOWN,
+                Map.of(1, GenisysSlaveState.initial(1)),
+                now
+        );
+
+        GenisysEvent up = new GenisysTransportEvent.TransportUp(now);
+        GenisysStateReducer.Result result = reducer.apply(down, up);
+
+        assertEquals(GenisysControllerState.GlobalState.INITIALIZING,
+                result.newState().globalState());
+
+        assertTrue(result.intents().kinds()
+                .contains(GenisysIntents.Kind.BEGIN_INITIALIZATION));
     }
 
     // ---------------------------------------------------------------------

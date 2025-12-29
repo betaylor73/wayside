@@ -31,6 +31,9 @@ import java.util.Objects;
  * </ul>
  *
  * This class contains both, but does not impose any execution model.
+ *
+ * GlobalState values are interpreted by the reducer; this class does not encode
+ * transition rules.
  */
 public final class GenisysControllerState
 {
@@ -38,8 +41,33 @@ public final class GenisysControllerState
      * Global lifecycle state of the GENISYS master.
      */
     public enum GlobalState {
+        /**
+         * The controller is initializing or re-initializing protocol state.
+         * All slaves will be synchronized via RECALL before normal operation.
+         */
         INITIALIZING,
-        RUNNING
+
+        /**
+         * Normal protocol operation.
+         * The master cycles through slaves executing the per-slave state machine.
+         */
+        RUNNING,
+
+        /**
+         * Local transport is unavailable.
+         *
+         * This state represents a master-side inability to perform reliable I/O
+         * (e.g. socket unavailable, interface down, administrative inhibit).
+         *
+         * While in this state:
+         *  - No protocol progress is allowed
+         *  - Per-slave protocol state must not change
+         *  - All non-transport events are ignored by the reducer
+         *
+         * Exit from this state occurs only on TransportUp, which forces
+         * re-initialization.
+         */
+        TRANSPORT_DOWN
     }
 
     private final GlobalState globalState;

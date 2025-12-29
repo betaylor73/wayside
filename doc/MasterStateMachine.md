@@ -97,6 +97,40 @@ The master cycles through slaves sequentially.
 
 ---
 
+### 3.3 `TRANSPORT_DOWN`
+
+**Purpose:**
+
+* Represent loss of local transport availability at the master
+
+**Entry condition:**
+
+* Receipt of `TransportDown`
+
+**Meaning:**
+
+* The master is locally unable to perform reliable I/O (e.g. socket unavailable,
+  interface down, administrative inhibit)
+* This state is **not inferred** from slave silence or protocol timeouts
+
+**Behavior:**
+
+* All protocol activity is globally suspended
+* No per-slave protocol state may change
+* No retries, recalls, polls, or control deliveries occur
+* All non-transport events are ignored
+
+**Exit condition:**
+
+* Receipt of `TransportUp`
+
+**On exit:**
+
+* Transition to `INITIALIZING`
+* Force full protocol re-synchronization via per-slave `RECALL`
+
+---
+
 ## 4. Per-slave states
 
 Each slave proceeds through the following states during master operation.
