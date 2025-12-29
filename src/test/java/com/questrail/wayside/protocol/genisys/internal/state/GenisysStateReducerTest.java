@@ -4,6 +4,7 @@ import com.questrail.wayside.api.ControlId;
 import com.questrail.wayside.api.IndicationId;
 import com.questrail.wayside.api.IndicationSet;
 import com.questrail.wayside.api.SignalState;
+import com.questrail.wayside.protocol.genisys.model.Acknowledge;
 import com.questrail.wayside.protocol.genisys.model.GenisysMessage;
 import com.questrail.wayside.mapping.ArraySignalIndex;
 import com.questrail.wayside.mapping.SignalIndex;
@@ -19,10 +20,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -146,6 +145,72 @@ public class GenisysStateReducerTest {
         assertEquals(1, result.intents().targetStation());
     }
 
+    @Test
+    void pollAcknowledgeClearsAckPending() {
+        GenisysControllerState state = initialStateWithSlaves(1);
+
+        // 1) Drive RECALL -> SEND_CONTROLS by providing the canonical recall response (IndicationData).
+        IndicationSet indications = IndicationSet.empty(indicationIndex);
+        GenisysMessage recallResponse = new IndicationData(
+                GenisysStationAddress.of(1),
+                indications
+        );
+        GenisysEvent recallEvent = new GenisysMessageEvent.MessageReceived(now, 1, recallResponse);
+        GenisysStateReducer.Result afterRecall = reducer.apply(state, recallEvent);
+
+        assertEquals(GenisysSlaveState.Phase.SEND_CONTROLS,
+                afterRecall.newState().slaves().get(1).phase());
+
+        // 2) Drive SEND_CONTROLS -> POLL.
+        //    The current reducer implementation advances phases based on phase, not message type,
+        //    so any valid semantic message will do. Acknowledge is the simplest.
+        GenisysMessage controlResponse = new Acknowledge(GenisysStationAddress.of(1));
+        GenisysEvent controlEvent = new GenisysMessageEvent.MessageReceived(now, 1, controlResponse);
+        GenisysStateReducer.Result afterControl = reducer.apply(afterRecall.newState(), controlEvent);
+
+        assertEquals(GenisysSlaveState.Phase.POLL,
+                afterControl.newState().slaves().get(1).phase());
+
+        // 3) In POLL, receiving $F1 Acknowledge means "no data"; no acknowledgment is required.
+        GenisysMessage pollAck = new Acknowledge(GenisysStationAddress.of(1));
+        GenisysEvent pollAckEvent = new GenisysMessageEvent.MessageReceived(now, 1, pollAck);
+        GenisysStateReducer.Result result = reducer.apply(afterControl.newState(), pollAckEvent);
+
+        assertFalse(result.newState().slaves().get(1).acknowledgmentPending());
+    }
+
+    @Test
+    void pollIndicationDataSetsAckPending() {
+        GenisysControllerState state = initialStateWithSlaves(1);
+
+        // 1) Drive RECALL -> SEND_CONTROLS.
+        IndicationSet indications = IndicationSet.empty(indicationIndex);
+        GenisysMessage recallResponse = new IndicationData(
+                GenisysStationAddress.of(1),
+                indications
+        );
+        GenisysEvent recallEvent = new GenisysMessageEvent.MessageReceived(now, 1, recallResponse);
+        GenisysStateReducer.Result afterRecall = reducer.apply(state, recallEvent);
+
+        // 2) Drive SEND_CONTROLS -> POLL.
+        GenisysMessage controlResponse = new Acknowledge(GenisysStationAddress.of(1));
+        GenisysEvent controlEvent = new GenisysMessageEvent.MessageReceived(now, 1, controlResponse);
+        GenisysStateReducer.Result afterControl = reducer.apply(afterRecall.newState(), controlEvent);
+
+        assertEquals(GenisysSlaveState.Phase.POLL,
+                afterControl.newState().slaves().get(1).phase());
+
+        // 3) In POLL, receiving IndicationData means data was returned; master must acknowledge it.
+        GenisysMessage pollData = new IndicationData(
+                GenisysStationAddress.of(1),
+                IndicationSet.empty(indicationIndex)
+        );
+        GenisysEvent pollDataEvent = new GenisysMessageEvent.MessageReceived(now, 1, pollData);
+        GenisysStateReducer.Result result = reducer.apply(afterControl.newState(), pollDataEvent);
+
+        assertTrue(result.newState().slaves().get(1).acknowledgmentPending());
+    }
+
     // ---------------------------------------------------------------------
     // Control intent
     // ---------------------------------------------------------------------
@@ -207,5 +272,4 @@ public class GenisysStateReducerTest {
         assertTrue(result.intents().kinds()
                 .contains(GenisysIntents.Kind.SEND_RECALL));
     }
-
 }

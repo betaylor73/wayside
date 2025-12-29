@@ -1,7 +1,12 @@
 package com.questrail.wayside.protocol.genisys.internal.state;
 
-import com.questrail.wayside.protocol.genisys.internal.events.*;
+import com.questrail.wayside.protocol.genisys.internal.events.GenisysEvent;
+import com.questrail.wayside.protocol.genisys.internal.events.GenisysMessageEvent;
+import com.questrail.wayside.protocol.genisys.internal.events.GenisysTimeoutEvent;
+import com.questrail.wayside.protocol.genisys.internal.events.GenisysTransportEvent;
+import com.questrail.wayside.protocol.genisys.internal.events.GenisysControlIntentEvent;
 import com.questrail.wayside.protocol.genisys.model.GenisysMessage;
+import com.questrail.wayside.protocol.genisys.model.IndicationData;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -184,17 +189,50 @@ public final class GenisysStateReducer
     private Result handlePollResponse(GenisysControllerState state,
                                       GenisysSlaveState slave,
                                       GenisysMessage msg,
-                                      Instant now) {
-        // NOTE: soon we should base this on message type:
-        // - $F2 Indication Data => ackPending true
-        // - $F1 Acknowledge     => ackPending false
-        // This matches the GENISYS behavioral contract and master state machine docs.
+                                      Instant now)
+    {
+        /*
+         * POLL-phase response semantics (GENISYS):
+         *
+         * In POLL phase, the slave is being asked “do you have any new/changed indication data?”
+         * The slave replies with one of two semantic message types:
+         *
+         *   1) Acknowledge ($F1):
+         *        - Means “no data to report”
+         *        - The master does NOT need to acknowledge the acknowledge
+         *        - Therefore: ackPending = false
+         *
+         *   2) IndicationData ($F2):
+         *        - Means “here is data”
+         *        - GENISYS requires that slave->master data be acknowledged by the master
+         *        - Therefore: ackPending = true
+         *
+         * IMPORTANT ARCHITECTURAL NOTE:
+         * This decision is made purely at the semantic level:
+         *   - We inspect only the decoded message type (GenisysMessage subtype)
+         *   - We do not inspect frames, bytes, CRCs, or wire format artifacts
+         * This is consistent with the “reducers are semantic-only” and “decode-before-event” rules.
+         */
+        final boolean ackPending = (msg instanceof IndicationData);
+
         GenisysSlaveState updated = slave
-                .withAcknowledgmentPending(true, now);
+                .withAcknowledgmentPending(ackPending, now);
 
-        GenisysControllerState newState = state.withSlaveState(updated, now);
+        GenisysControllerState newState =
+                state.withSlaveState(updated, now);
 
-        return new Result(newState, GenisysIntents.pollNext(updated.stationAddress()));
+        /*
+         * We continue the polling loop regardless of ackPending.
+         *
+         * ackPending influences WHAT the next outbound message should be (e.g., ACK+POLL vs POLL),
+         * but not WHETHER polling continues.
+         *
+         * That outbound selection remains the responsibility of the scheduler/driver that
+         * interprets slave state + intents. The reducer’s job is only to maintain correct
+         * semantic state.
+         */
+        return new Result(newState,
+                GenisysIntents.pollNext(updated.stationAddress()));
     }
 
     private Result handleFailedResponse(GenisysControllerState state,

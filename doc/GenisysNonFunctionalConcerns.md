@@ -79,6 +79,16 @@ Observability is applied at **semantic and architectural boundaries**, not at ar
 - Transport buffer management
 - Reducer internal decision trees beyond state transitions
 
+#### Decoder Failure Boundary (Normative)
+
+Failures to decode wire-level frames into valid semantic GENISYS messages
+(e.g., CRC failure, malformed framing, invalid length, or address mismatch)
+**do not generate reducer-visible events**.
+
+Such failures are surfaced exclusively through observability mechanisms and
+affect protocol behavior only indirectly, via the absence of a valid semantic
+message (e.g., response timeouts).
+
 ### 3.4 Reducers and Observability
 
 Reducers **must not perform logging**.
