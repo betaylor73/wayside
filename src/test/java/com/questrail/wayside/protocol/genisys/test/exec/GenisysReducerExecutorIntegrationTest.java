@@ -1,6 +1,7 @@
 package com.questrail.wayside.protocol.genisys.test.exec;
 
 import com.questrail.wayside.protocol.genisys.internal.events.GenisysMessageEvent;
+import com.questrail.wayside.protocol.genisys.internal.events.GenisysTimeoutEvent;
 import com.questrail.wayside.protocol.genisys.internal.events.GenisysTransportEvent;
 import com.questrail.wayside.protocol.genisys.internal.state.GenisysControllerState;
 import com.questrail.wayside.protocol.genisys.internal.state.GenisysSlaveState;
@@ -109,7 +110,14 @@ class GenisysReducerExecutorIntegrationTest {
         // Reducer in RECALL → SEND_CONTROLS, executor sends controls
         // ------------------------------------------------------------------
         var s2 = 2;
-        harness.apply(new GenisysMessageEvent.MessageReceived(now, s2, new Acknowledge(null)));
+        // For recall completion, only IndicationData is valid per GENISYS
+        record TestIndicationIdB(int number) implements IndicationId {
+            public java.util.Optional<String> label() { return java.util.Optional.empty(); }
+        }
+        var idxB = new ArraySignalIndex<IndicationId>(new TestIndicationIdB(1));
+        IndicationSet s2Image = IndicationSet.empty(idxB);
+        harness.apply(new GenisysMessageEvent.MessageReceived(now, s2,
+                new IndicationData(GenisysStationAddress.of(s2), s2Image)));
 
         assertEquals(2, harness.executor().actions().size());
         assertEquals(RecordedAction.sentControls(s2), harness.executor().actions().get(0));
@@ -128,5 +136,82 @@ class GenisysReducerExecutorIntegrationTest {
 
         // At this point both stations are polling. Global RUNNING transition
         // is not yet encoded in the reducer, so we assert per-slave POLL phase only.
+    }
+
+    @Test
+    void pollTimeoutRetryThenFailedAndRecallRecovery() {
+        Instant now = Instant.EPOCH;
+        GenisysControllerState initial = GenisysControllerState.initializing(List.of(1), now);
+        GenisysReducerExecutorHarness h = new GenisysReducerExecutorHarness(initial);
+
+        // Drive RECALL -> SEND_CONTROLS with IndicationData (full image acceptable as empty for test)
+        record TestIndicationId2(int number) implements IndicationId {
+            public java.util.Optional<String> label() { return java.util.Optional.empty(); }
+        }
+        var idx = new ArraySignalIndex<IndicationId>(new TestIndicationId2(1));
+        IndicationSet img = IndicationSet.empty(idx);
+        h.apply(new GenisysMessageEvent.MessageReceived(now, 1,
+                new IndicationData(GenisysStationAddress.of(1), img)));
+        assertTrue(h.executor().actions().contains(RecordedAction.sentControls(1)),
+                () -> "Expected SENT_CONTROLS(1); got: " + h.executor().actions());
+        h.executor().clear();
+
+        // Drive SEND_CONTROLS -> POLL with any valid message (Acknowledge simplest)
+        h.apply(new GenisysMessageEvent.MessageReceived(now, 1, new Acknowledge(null)));
+        assertEquals(GenisysSlaveState.Phase.POLL, h.state().slaves().get(1).phase());
+        h.executor().clear();
+
+        // Two consecutive POLL timeouts -> RETRY_CURRENT each time, failure increments
+        h.apply(new GenisysTimeoutEvent.ResponseTimeout(now, 1));
+        assertTrue(h.executor().actions().contains(RecordedAction.retriedCurrent(1)),
+                () -> "Expected RETRIED_CURRENT(1); got: " + h.executor().actions());
+        assertEquals(1, h.state().slaves().get(1).consecutiveFailures());
+        h.executor().clear();
+
+        h.apply(new GenisysTimeoutEvent.ResponseTimeout(now, 1));
+        assertTrue(h.executor().actions().contains(RecordedAction.retriedCurrent(1)));
+        assertEquals(2, h.state().slaves().get(1).consecutiveFailures());
+        h.executor().clear();
+
+        // Third timeout -> FAILED and SEND_RECALL
+        h.apply(new GenisysTimeoutEvent.ResponseTimeout(now, 1));
+        assertEquals(GenisysSlaveState.Phase.FAILED, h.state().slaves().get(1).phase());
+        assertEquals(3, h.state().slaves().get(1).consecutiveFailures());
+        assertTrue(h.executor().actions().contains(RecordedAction.sentRecall(1)),
+                () -> "Expected SENT_RECALL(1); got: " + h.executor().actions());
+        h.executor().clear();
+
+        // Recovery: receipt of a valid message while FAILED triggers RECALL + SEND_RECALL
+        h.apply(new GenisysMessageEvent.MessageReceived(now, 1,
+                new IndicationData(GenisysStationAddress.of(1), img)));
+        assertEquals(GenisysSlaveState.Phase.RECALL, h.state().slaves().get(1).phase());
+        assertTrue(h.executor().actions().contains(RecordedAction.sentRecall(1)));
+    }
+
+    @Test
+    void transportDownSuppressesProtocolThenTransportUpReinitializes() {
+        Instant now = Instant.EPOCH;
+        GenisysControllerState initial = GenisysControllerState.initializing(List.of(1), now);
+        GenisysReducerExecutorHarness h = new GenisysReducerExecutorHarness(initial);
+
+        // Transport goes down -> dominant suspend intent
+        h.apply(new GenisysTransportEvent.TransportDown(now));
+        assertTrue(h.executor().actions().contains(RecordedAction.protocolSuspended()));
+        assertTrue(h.executor().actions().contains(RecordedAction.allTimersCancelled()));
+        h.executor().clear();
+
+        // While down, even valid semantic messages produce no actions
+        record TestIndicationId3(int number) implements IndicationId {
+            public java.util.Optional<String> label() { return java.util.Optional.empty(); }
+        }
+        var idx2 = new ArraySignalIndex<IndicationId>(new TestIndicationId3(1));
+        IndicationSet img2 = IndicationSet.empty(idx2);
+        h.apply(new GenisysMessageEvent.MessageReceived(now, 1,
+                new IndicationData(GenisysStationAddress.of(1), img2)));
+        assertTrue(h.executor().actions().isEmpty(), "No protocol actions while TRANSPORT_DOWN");
+
+        // Transport recovers -> begin initialization
+        h.apply(new GenisysTransportEvent.TransportUp(now));
+        assertTrue(h.executor().actions().contains(RecordedAction.initializationStarted()));
     }
 }

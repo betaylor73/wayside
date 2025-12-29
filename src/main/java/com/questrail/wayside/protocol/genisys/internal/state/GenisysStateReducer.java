@@ -223,7 +223,12 @@ public final class GenisysStateReducer
 
                 if (incremented.consecutiveFailures() < failureThreshold) {
                     GenisysControllerState newState = state.withSlaveState(incremented, now);
-                    yield new Result(newState, GenisysIntents.retryCurrent());
+                    // Emit RETRY_CURRENT targeted at the specific station for executor clarity
+                    GenisysIntents intents = GenisysIntents.builder()
+                            .add(GenisysIntents.Kind.RETRY_CURRENT)
+                            .targetStation(addr)
+                            .build();
+                    yield new Result(newState, intents);
                 }
 
                 // Threshold reached: enter FAILED and begin recovery via RECALL.
