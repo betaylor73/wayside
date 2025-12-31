@@ -227,6 +227,7 @@ public class GenisysStateReducerTest {
 
         GenisysSlaveState slave = result.newState().slaves().get(1);
         assertEquals(GenisysSlaveState.Phase.SEND_CONTROLS, slave.phase());
+        assertEquals(GenisysControllerState.GlobalState.RUNNING, result.newState().globalState());
 
         assertTrue(result.intents().kinds()
                 .contains(GenisysIntents.Kind.SEND_CONTROLS));

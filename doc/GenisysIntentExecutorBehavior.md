@@ -148,6 +148,25 @@ The executor communicates outcomes **only** via `GenisysEvent`s, including:
 - `ResponseTimeout`
 - `TransportDown` / `TransportUp`
 
+### Ingress message legality (Normative)
+
+The I/O boundary that accepts inbound traffic (transport adapter + frame decode +
+semantic message decode) MUST emit `MessageReceived` events **only** for messages
+that are:
+
+- syntactically valid and successfully decoded into a semantic `GenisysMessage`, and
+- **legal for the current per-slave protocol phase and effective configuration**
+  (e.g., checkback enabled vs disabled).
+
+Messages that are decoded but *illegal in context* MUST be treated as **non-events**:
+
+- no `MessageReceived` is emitted
+- the condition is surfaced only via observability mechanisms at the I/O boundary
+- protocol behavior is affected only indirectly (e.g., the reducer observes a timeout)
+
+This preserves the architectural rule that reducer-visible events represent **semantic
+truth**, not wire-level or contextual invalidity.
+
 The executor must not mutate controller state directly.
 
 ---
@@ -175,4 +194,3 @@ Those concerns belong to the reducer or higher layers.
 - event‑only feedback
 
 Correctness depends on faithful adherence to this contract.
-

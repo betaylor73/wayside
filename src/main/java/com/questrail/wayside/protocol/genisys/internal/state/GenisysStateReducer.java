@@ -337,6 +337,24 @@ public final class GenisysStateReducer
 
         GenisysControllerState newState = state.withSlaveState(updated, now);
 
+        // If we are still initializing, transition to RUNNING once all slaves have
+        // successfully exited the initial RECALL phase at least once.
+        if (newState.globalState() == GenisysControllerState.GlobalState.INITIALIZING) {
+
+            boolean allRecalled = true;
+            for (GenisysSlaveState s : newState.slaves().values()) {
+                if (s.phase() == GenisysSlaveState.Phase.RECALL) {
+                    allRecalled = false;
+                    break;
+                }
+            }
+
+            if (allRecalled) {
+                newState = newState.withGlobalState(
+                        GenisysControllerState.GlobalState.RUNNING, now);
+            }
+        }
+
         return new Result(newState, GenisysIntents.sendControls(updated.stationAddress()));
     }
 

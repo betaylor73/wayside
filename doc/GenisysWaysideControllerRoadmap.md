@@ -1,52 +1,55 @@
 # GENISYS WaysideController Roadmap (Authoritative)
 
-This document tracks the **planned progression** from the current GENISYS protocol architecture to a **production-ready WaysideController implementation**, with UDP as the first supported transport.
+This document tracks the **planned progression** from the current GENISYS protocol architecture to a **production‑ready WaysideController implementation**, with UDP as the first supported transport.
 
-This roadmap is **implementation-oriented** and intentionally separate from GENISYS protocol definitions.
+This roadmap is **implementation‑oriented** and intentionally separate from GENISYS protocol definitions. It reflects the *current, authoritative status* of the project as of the completion of Phase 1.
 
 ---
 
-## Phase 0 — Baseline (Completed)
+## Phase 0 — Baseline (Completed)
 
-### Status: ✅ Complete
+### Status: ✅ **Complete**
 
 The following architectural foundations are locked and treated as authoritative:
 
 - Normative architecture documents are binding
-- Reducers are pure, exhaustive, and semantic-only
-- Decode-before-event is enforced
+- Reducers are pure, exhaustive, and semantic‑only
+- Decode‑before‑event is enforced
 - Reducers never see frames or bytes
 - Observability ≠ logging
 - Configuration ≠ file parsing
-- Transport-down gating is defined and implemented
+- Transport‑down gating is defined and implemented
 - Intent semantics are explicit and documented
 - Executor behavior contract is defined
 - Reference intent executor and unit tests exist
 
-At this point, GENISYS protocol logic is transport-agnostic and deterministic.
+At this point, GENISYS protocol logic is transport‑agnostic and deterministic.
 
 ---
 
-## Phase 1 — Reducer → Executor Integration
+## Phase 1 — Reducer → Executor Integration
 
 ### Goal
 
-Validate that reducer output and executor behavior compose correctly in a closed semantic loop.
+Validate that reducer output and executor behavior compose correctly in a **closed semantic loop**, without transport, timers, or decoding.
 
-### Work items
+### Work items (all completed)
 
-- Build a reducer–executor integration harness
+- Reducer–executor integration harness
   - Real `GenisysStateReducer`
   - Real `GenisysControllerState`
   - `RecordingIntentExecutor`
-  - In-memory event queue
+  - In‑memory event queue
 
-- Write end-to-end semantic tests:
-  - Initialization → Recall → Poll → Running
-  - Poll → ResponseTimeout → Retry
-  - TransportDown → TransportUp → Re-initialization
+- End‑to‑end semantic integration tests:
+  - Initialization → Recall → Control delivery → Polling
+  - Poll → ResponseTimeout → Retry / Failure
+  - TransportDown → TransportUp → Forced re‑initialization
 
-### Explicit exclusions
+- Protocol‑mandated lifecycle completion:
+  - Global `INITIALIZING → RUNNING` transition derived once **all slaves complete initial Recall at least once**
+
+### Explicit exclusions (honored)
 
 - No sockets
 - No timers
@@ -56,50 +59,70 @@ Validate that reducer output and executor behavior compose correctly in a closed
 ### Exit criteria
 
 - Reducer–executor integration tests pass
-- All protocol flows are validated semantically
+- All protocol flows validated semantically
+- Global lifecycle semantics match `MasterStateMachine.md`
+
+### Status: ✅ **Complete**
+
+Phase 1 is now **formally closed**. The reducer/executor pair constitutes a complete, deterministic semantic protocol core.
 
 ---
 
-## Phase 2 — Synthetic Event Sources
+## Phase 2 — Synthetic Event Sources
 
 ### Goal
 
-Stress reducer and executor behavior using realistic but deterministic event sequences.
+Stress reducer and executor behavior using **realistic but deterministic synthetic event sequences**, validating correctness under adversarial ordering.
 
-### Work items
+Phase 2 introduces *no new protocol behavior* and *no new architectural responsibilities*.
 
-- Implement synthetic event sources for:
+### Work items (current focus)
+
+- Implement synthetic event producers for existing event types:
   - `MessageReceived`
   - `ResponseTimeout`
   - `TransportUp` / `TransportDown`
 
-- Validate behavior under unusual or adversarial event ordering
+- Exercise adversarial scenarios:
+  - Duplicate messages
+  - Late responses (message‑after‑timeout)
+  - Missing responses
+  - Transport flapping at arbitrary points in the protocol cycle
+
+### Constraints (unchanged)
+
+- Reducer logic must not change
+- Executor must not invent retries, polling, or sequencing
+- No transport, sockets, decoding, or timers
 
 ### Exit criteria
 
-- Reducer behavior remains correct under synthetic stress
+- Reducer behavior remains deterministic and correct under stress
 - No architectural boundaries are violated
+- No new protocol logic is required to accommodate stress scenarios
+
+### Status: ▶️ **Active / Ready to Begin**
 
 ---
 
-## Phase 3 — Concrete Controller Skeleton
+## Phase 3 — Concrete Controller Skeleton
 
 ### Goal
 
-Introduce a production-shaped controller without real I/O.
+Introduce a production‑shaped controller without real I/O.
 
 ### Work items
 
 - Implement `GenisysWaysideController`
 - Owns:
-  - event queue
-  - reducer
-  - executor
-  - controller state
+  - Event queue
+  - Reducer
+  - Executor
+  - Controller state
 
-- Runs the canonical controller loop:
+- Run the canonical controller loop:
 
-```
+```text
 while (running) {
     GenisysEvent event = eventQueue.take();
     Result r = reducer.apply(state, event);
@@ -110,7 +133,7 @@ while (running) {
 
 ### Constraints
 
-- Single-threaded / Actor-style execution
+- Single‑threaded / Actor‑style execution
 - No blocking in executor
 - Events are the only inputs
 
@@ -119,9 +142,11 @@ while (running) {
 - Controller runs entirely in tests
 - No protocol logic depends on transport or time
 
+### Status: ⏳ **Pending**
+
 ---
 
-## Phase 4 — UDP Transport Adapter
+## Phase 4 — UDP Transport Adapter
 
 ### Goal
 
@@ -132,12 +157,12 @@ Add the first real transport without contaminating core protocol logic.
 - Implement `UdpTransportAdapter`
   - Socket lifecycle management
   - Datagram send/receive
-  - Surface `TransportUp` / `TransportDown`
+  - Emit `TransportUp` / `TransportDown`
 
 - Implement decoding pipeline:
-  - bytes → frames
-  - frames → messages
-  - messages → `GenisysEvent`
+  - Bytes → Frames
+  - Frames → Messages
+  - Messages → `GenisysEvent`
 
 ### Architectural constraints
 
@@ -150,9 +175,11 @@ Add the first real transport without contaminating core protocol logic.
 - GENISYS runs correctly over UDP
 - No changes to reducer logic
 
+### Status: ⏳ **Pending**
+
 ---
 
-## Phase 5 — Real Timer Integration
+## Phase 5 — Real Timer Integration
 
 ### Goal
 
@@ -160,10 +187,10 @@ Replace synthetic timers with real timing infrastructure.
 
 ### Work items
 
-- Implement executor-owned timer service
+- Implement executor‑owned timer service
 - Map intents to:
-  - timer arm
-  - timer cancel
+  - Timer arm
+  - Timer cancel
 
 - Emit `ResponseTimeout` events
 
@@ -176,9 +203,11 @@ Replace synthetic timers with real timing infrastructure.
 
 - Protocol timing behaves correctly under real time
 
+### Status: ⏳ **Pending**
+
 ---
 
-## Phase 6 — Observability Sinks
+## Phase 6 — Observability Sinks
 
 ### Goal
 
@@ -187,14 +216,14 @@ Make the system explain its behavior without violating architectural purity.
 ### Work items
 
 - Emit observability signals for:
-  - state transitions
-  - intent execution
+  - State transitions
+  - Intent execution
 
 - Bind multiple sinks:
-  - logging
-  - metrics
-  - tracing
-  - diagnostic streams
+  - Logging
+  - Metrics
+  - Tracing
+  - Diagnostic streams
 
 ### Constraints
 
@@ -205,9 +234,11 @@ Make the system explain its behavior without violating architectural purity.
 
 - System behavior is diagnosable in production
 
+### Status: ⏳ **Pending**
+
 ---
 
-## Phase 7 — Configuration Binding
+## Phase 7 — Configuration Binding
 
 ### Goal
 
@@ -216,9 +247,9 @@ Bind semantic configuration to deployment environments.
 ### Work items
 
 - Map configuration inputs to semantic objects:
-  - slave addresses
-  - polling cadence
-  - retry limits
+  - Slave addresses
+  - Poll cadence
+  - Retry limits
 
 ### Constraints
 
@@ -229,19 +260,21 @@ Bind semantic configuration to deployment environments.
 
 - Same binary deploys safely across environments
 
+### Status: ⏳ **Pending**
+
 ---
 
-## Phase 8 — Production Hardening
+## Phase 8 — Production Hardening
 
 ### Goal
 
-Achieve rail-grade robustness.
+Achieve rail‑grade robustness.
 
 ### Work items
 
 - Fault injection testing
 - Transport flapping scenarios
-- Long-running soak tests
+- Long‑running soak tests
 - Memory and GC profiling
 - Backpressure and overload testing
 
@@ -249,13 +282,97 @@ Achieve rail-grade robustness.
 
 - System meets production reliability requirements
 
+### Status: ⏳ **Pending**
+
 ---
 
-## Summary
+## Summary (Authoritative)
 
-The intellectually hardest work — protocol semantics, state modeling, intent boundaries — is already complete.
+- Phase 0: **Complete**
+- Phase 1: **Complete** (global lifecycle semantics closed)
+- Phase 2: **Ready to begin**
 
-Remaining phases focus on **integration, adaptation, and validation**, not invention.
+The intellectually hardest work — protocol semantics, state modeling, intent boundaries — is now complete. Remaining phases focus on **validation, integration, and adaptation**, not invention.
 
-This roadmap is the authoritative guide for progressing from the current architecture to a production GENISYS WaysideController.
+---
+
+## Appendix A — Phase 1 Completion Notes
+
+This appendix records **why Phase 1 is formally closed** and **what was proven**, to provide a durable re‑anchoring point for future work and reviews.
+
+### A.1 Why Phase 1 is closed
+
+Phase 1 is complete because the GENISYS protocol core now forms a **closed, deterministic semantic loop**:
+
+- The reducer and executor compose without hidden side effects
+- All protocol behavior is driven exclusively by **semantic events**
+- No protocol decisions depend on transport availability, timing infrastructure, or wire‑level artifacts
+
+The final blocking item for Phase 1 — the global lifecycle transition from `INITIALIZING` to `RUNNING` — has been implemented and validated:
+
+- The transition is **derived**, not imperative
+- It occurs exactly when **all configured slaves have completed initial Recall at least once**
+- The behavior matches the normative requirements in `MasterStateMachine.md`
+
+With this change, Phase 1 no longer contains any acknowledged gaps or “known incompleteness.”
+
+---
+
+### A.2 What Phase 1 proved
+
+Phase 1 establishes the following facts as *true and tested*:
+
+1. **Protocol semantics are transport‑independent**  
+   The GENISYS protocol can be expressed, reasoned about, and validated entirely in terms of semantic events and state transitions.
+
+2. **Reducers are pure and exhaustive**  
+   Reducers:
+   - Perform no I/O
+   - Perform no logging
+   - Perform no scheduling
+   - See only semantically valid events
+
+3. **Executor behavior is non‑inventive**  
+   The executor:
+   - Interprets intents atomically
+   - Applies deterministic precedence rules
+   - Does not invent retries, polls, or protocol sequencing
+
+4. **Initialization and recovery semantics are correct**  
+   - Recall‑until‑active behavior is validated
+   - TransportDown globally suppresses protocol activity
+   - TransportUp forces re‑initialization via Recall
+
+5. **Failure and retry behavior is deterministic**  
+   - Timeouts escalate retries deterministically
+   - Failed slaves re‑enter Recall without corrupting global state
+
+6. **The protocol core is test‑complete**  
+   All GENISYS protocol flows defined in Phase 1 are exercised via executable semantic tests, not transport simulations.
+
+---
+
+### A.3 What Phase 1 explicitly did *not* attempt
+
+Phase 1 deliberately excluded:
+
+- Real transports (UDP, serial, sockets)
+- Real timers or clocks
+- Decoding or encoding pipelines
+- Observability sinks (logging, metrics, tracing)
+- Configuration binding
+
+These exclusions are intentional and ensure that subsequent phases add **integration and realism**, not new protocol logic.
+
+---
+
+### A.4 Implication for subsequent phases
+
+Because Phase 1 is closed:
+
+- Phase 2 may **stress** the protocol core but must not change it
+- Phase 3 may **host** the protocol core but must not reinterpret it
+- Later phases may **adapt** the protocol core to transports and environments without contaminating its semantics
+
+Phase 1 therefore represents a **semantic foundation** that all subsequent work must preserve.
 

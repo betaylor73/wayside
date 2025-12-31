@@ -74,6 +74,8 @@ class GenisysReducerExecutorIntegrationTest {
         // State should have moved to SEND_CONTROLS for station 1
         GenisysSlaveState s1State = harness.state().slaves().get(s1);
         assertEquals(GenisysSlaveState.Phase.SEND_CONTROLS, s1State.phase());
+        // make sure that we do not transition to RUNNING early
+        assertEquals(GenisysControllerState.GlobalState.INITIALIZING, harness.state().globalState());
         harness.executor().clear();
 
         // ------------------------------------------------------------------
@@ -134,8 +136,9 @@ class GenisysReducerExecutorIntegrationTest {
         GenisysSlaveState s2State = harness.state().slaves().get(s2);
         assertEquals(GenisysSlaveState.Phase.POLL, s2State.phase());
 
-        // At this point both stations are polling. Global RUNNING transition
-        // is not yet encoded in the reducer, so we assert per-slave POLL phase only.
+        // At this point both stations have completed initial recall at least once,
+        // so the controller must be in global RUNNING.
+        assertEquals(GenisysControllerState.GlobalState.RUNNING, harness.state().globalState());
     }
 
     @Test
