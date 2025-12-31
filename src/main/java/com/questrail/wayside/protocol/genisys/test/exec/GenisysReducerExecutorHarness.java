@@ -5,6 +5,10 @@ import com.questrail.wayside.protocol.genisys.internal.state.GenisysControllerSt
 import com.questrail.wayside.protocol.genisys.internal.state.GenisysStateReducer.Result;
 import com.questrail.wayside.protocol.genisys.internal.events.GenisysEvent;
 
+import java.util.Deque;
+import java.util.ArrayDeque;
+import java.util.Objects;
+
 /**
  * GenisysReducerExecutorHarness
  * --------------------------------
@@ -27,17 +31,33 @@ import com.questrail.wayside.protocol.genisys.internal.events.GenisysEvent;
  *  - Uses the real GenisysControllerState
  *  - Uses a RecordingIntentExecutor (test-only)
  *  - Applies exactly one event at a time
+ *
+ * <p>This class is intentionally retained, largely unchanged, to preserve the
+ * historical semantics and explanatory value of early-phase tests. It directly
+ * coordinates the reducer and executor without a production controller.</p>
+ *
+ * <p>In Phase 3 and later, tests should prefer {@link GenisysControllerHarness},
+ * but this class remains a valid {@link GenisysTestHarness} implementation.</p>
  */
-final class GenisysReducerExecutorHarness {
+final class GenisysReducerExecutorHarness implements GenisysTestHarness
+{
+    private final GenisysStateReducer reducer = new GenisysStateReducer();
+    private final RecordingIntentExecutor executor;
+    private final Deque<GenisysEvent> queue = new ArrayDeque<>();
 
     private GenisysControllerState state;
-    private final GenisysStateReducer reducer;
-    private final RecordingIntentExecutor executor;
 
-    GenisysReducerExecutorHarness(GenisysControllerState initialState) {
-        this.state = initialState;
-        this.reducer = new GenisysStateReducer();
-        this.executor = new RecordingIntentExecutor();
+    public GenisysReducerExecutorHarness(GenisysControllerState initialState,
+                                         RecordingIntentExecutor executor)
+    {
+        this.state = Objects.requireNonNull(initialState, "initialState");
+        this.executor = Objects.requireNonNull(executor, "executor");
+    }
+
+    @Override
+    public void submit(GenisysEvent event)
+    {
+        queue.addLast(Objects.requireNonNull(event));
     }
 
     /**
@@ -47,17 +67,34 @@ final class GenisysReducerExecutorHarness {
      * This method represents exactly one iteration of the conceptual
      * controller loop.
      */
-    void apply(GenisysEvent event) {
+    @Override
+    public void apply(GenisysEvent event) {
+        Objects.requireNonNull(event, "event");
         Result result = reducer.apply(state, event);
         state = result.newState();
         executor.execute(result.intents());
     }
 
-    GenisysControllerState state() {
+    @Override
+    public void runToQuiescence()
+    {
+        while (!queue.isEmpty()) {
+            GenisysEvent event = queue.pollFirst();
+            GenisysStateReducer.Result result = reducer.apply(state, event);
+            state = result.newState();
+            executor.execute(result.intents());
+        }
+    }
+
+    @Override
+    public GenisysControllerState state()
+    {
         return state;
     }
 
-    RecordingIntentExecutor executor() {
+    @Override
+    public RecordingIntentExecutor executor()
+    {
         return executor;
     }
 }

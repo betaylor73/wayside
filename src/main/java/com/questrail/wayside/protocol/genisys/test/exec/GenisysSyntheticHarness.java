@@ -26,7 +26,7 @@ final class GenisysSyntheticHarness
     private final Deque<GenisysEvent> queue;
 
     GenisysSyntheticHarness(GenisysControllerState initialState) {
-        this.inner = new GenisysReducerExecutorHarness(initialState);
+        this.inner = new GenisysReducerExecutorHarness(initialState, new RecordingIntentExecutor());
         this.queue = new ArrayDeque<>();
     }
 

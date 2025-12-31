@@ -11,7 +11,6 @@ import com.questrail.wayside.protocol.genisys.model.GenisysStationAddress;
 import com.questrail.wayside.api.IndicationId;
 import com.questrail.wayside.api.IndicationSet;
 import com.questrail.wayside.mapping.ArraySignalIndex;
-import com.questrail.wayside.core.IndicationSetBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -38,7 +37,7 @@ class GenisysReducerExecutorIntegrationTest {
         Instant now = Instant.EPOCH;
         List<Integer> slaveAddresses = List.of(1, 2);
         GenisysControllerState initialState = GenisysControllerState.initializing(slaveAddresses, now);
-        GenisysReducerExecutorHarness harness = new GenisysReducerExecutorHarness(initialState);
+        GenisysTestHarness harness = GenisysTestHarnessFactory.newControllerHarness(initialState);
 
         // WHEN: the transport becomes available
         harness.apply(new GenisysTransportEvent.TransportUp(now));
@@ -145,7 +144,7 @@ class GenisysReducerExecutorIntegrationTest {
     void pollTimeoutRetryThenFailedAndRecallRecovery() {
         Instant now = Instant.EPOCH;
         GenisysControllerState initial = GenisysControllerState.initializing(List.of(1), now);
-        GenisysReducerExecutorHarness h = new GenisysReducerExecutorHarness(initial);
+        GenisysTestHarness h = GenisysTestHarnessFactory.newControllerHarness(initial);
 
         // Drive RECALL -> SEND_CONTROLS with IndicationData (full image acceptable as empty for test)
         record TestIndicationId2(int number) implements IndicationId {
@@ -195,7 +194,7 @@ class GenisysReducerExecutorIntegrationTest {
     void transportDownSuppressesProtocolThenTransportUpReinitializes() {
         Instant now = Instant.EPOCH;
         GenisysControllerState initial = GenisysControllerState.initializing(List.of(1), now);
-        GenisysReducerExecutorHarness h = new GenisysReducerExecutorHarness(initial);
+        GenisysTestHarness h = GenisysTestHarnessFactory.newControllerHarness(initial);
 
         // Transport goes down -> dominant suspend intent
         h.apply(new GenisysTransportEvent.TransportDown(now));

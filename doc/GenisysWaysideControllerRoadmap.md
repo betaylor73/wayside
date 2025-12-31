@@ -36,17 +36,20 @@ Validate that reducer output and executor behavior compose correctly in a **clos
 ### Work items (all completed)
 
 - Reducer–executor integration harness
+
   - Real `GenisysStateReducer`
   - Real `GenisysControllerState`
   - `RecordingIntentExecutor`
   - In‑memory event queue
 
 - End‑to‑end semantic integration tests:
+
   - Initialization → Recall → Control delivery → Polling
   - Poll → ResponseTimeout → Retry / Failure
   - TransportDown → TransportUp → Forced re‑initialization
 
 - Protocol‑mandated lifecycle completion:
+
   - Global `INITIALIZING → RUNNING` transition derived once **all slaves complete initial Recall at least once**
 
 ### Explicit exclusions (honored)
@@ -79,11 +82,13 @@ Phase 2 introduces *no new protocol behavior* and *no new architectural respons
 ### Work items (current focus)
 
 - Implement synthetic event producers for existing event types:
+
   - `MessageReceived`
   - `ResponseTimeout`
   - `TransportUp` / `TransportDown`
 
 - Exercise adversarial scenarios:
+
   - Duplicate messages
   - Late responses (message‑after‑timeout)
   - Missing responses
@@ -107,46 +112,109 @@ Phase 2 introduces *no new protocol behavior* and *no new architectural respons
 
 ## Phase 3 — Concrete Controller Skeleton
 
+### Phase 3 Re‑Anchor Acknowledgement (Authoritative)
+
+By entering Phase 3, we explicitly acknowledge and lock the following constraints:
+
+- **Protocol semantics are closed.**  
+  No changes to `genisys.md`, reducer logic, state transitions, or executor semantics are permitted in Phase 3.
+
+- **Reducer and executor boundaries are frozen.**  
+  Phase 3 code may *host* and *invoke* the reducer and executor, but must not reinterpret events, invent sequencing, or compensate for missing behavior.
+
+- **All Phase 1 and Phase 2 tests are non‑negotiable regression oracles.**  
+  Any failure of existing tests in Phase 3 indicates an error in Phase 3 code, not a deficiency in tests or protocol semantics.
+
+- **No new sources of protocol behavior are introduced.**  
+  Phase 3 introduces structural ownership only: event loop, state ownership, and wiring. Transport, timers, concurrency, and I/O remain out of scope.
+
+- **Transient internal phases are not externally asserted.**  
+  Phase 3 code must respect that reducers and executors may advance internal phases immediately; correctness is defined in terms of stable semantic invariants.
+
+This acknowledgement formally marks the transition from **semantic validation** (Phases 1–2) to **structural ownership** (Phase 3), while preserving the integrity of the GENISYS protocol core.
+
+---
+
 ### Goal
 
 Introduce a production‑shaped controller without real I/O.
 
-### Work items
+### Work items (all completed)
 
 - Implement `GenisysWaysideController`
-- Owns:
+
+- Controller owns:
+
   - Event queue
-  - Reducer
-  - Executor
-  - Controller state
+  - Reducer invocation
+  - Executor invocation
+  - Controller state ownership
 
-- Run the canonical controller loop:
+- Canonical controller loop implemented and exercised in tests
 
-```text
-while (running) {
-    GenisysEvent event = eventQueue.take();
-    Result r = reducer.apply(state, event);
-    state = r.newState();
-    intentExecutor.execute(r.intents());
-}
-```
+- Phase‑agnostic test harness interface introduced
 
-### Constraints
+- Legacy Phase 1/2 harness preserved
 
-- Single‑threaded / Actor‑style execution
+- Phase 3 controller‑backed harness added
+
+- All Phase 1 and Phase 2 tests executed against the controller without modification
+
+### Constraints (honored)
+
+- Single‑threaded / actor‑style execution
 - No blocking in executor
 - Events are the only inputs
+- No protocol reinterpretation
 
-### Exit criteria
+### Exit criteria (met)
 
 - Controller runs entirely in tests
+- All Phase 1 and Phase 2 tests pass unchanged
 - No protocol logic depends on transport or time
 
-### Status: ⏳ **Pending**
+### Status: ✅ **Complete**
 
 ---
 
 ## Phase 4 — UDP Transport Adapter
+
+### Phase 4 Re‑Anchor Acknowledgement (Authoritative)
+
+By entering Phase 4, we explicitly acknowledge and lock the following constraints:
+
+- **GENISYS protocol semantics are permanently closed.**  
+  No changes to `genisys.md`, reducer logic, state transitions, intent definitions, or executor semantics are permitted in Phase 4.
+
+- **The reducer remains transport‑agnostic.**  
+  Reducers must never see bytes, frames, sockets, ports, IP addresses, or timing artifacts. All inputs to the reducer are semantic `GenisysEvent` instances only.
+
+- **Transport integration is strictly adapter‑level.**  
+  Phase 4 introduces *adapters* that translate between real transports and semantic events. Adapters may fail, reconnect, or drop data, but they must not compensate for or reinterpret protocol behavior.
+
+- **Decode‑before‑event is mandatory.**  
+  All decoding pipelines must fully validate and classify inbound data before emitting semantic events. Invalid or undecodable input must not reach the reducer.
+
+- **The controller is not a transport.**  
+  `GenisysWaysideController` remains unaware of sockets, threads, timers, and retry logic. It consumes events and emits intents only.
+
+- **Executor remains the sole egress for outbound traffic.**  
+  Transport adapters may only send data in response to explicit executor intents. No adapter may originate protocol messages on its own initiative.
+
+- **Transport defects are not protocol defects.**  
+  Any failure observed in Phase 4 must be classified as:
+  - transport implementation error, or
+  - decode/encode boundary error
+  
+  Under no circumstances is a Phase 4 failure grounds for modifying reducer logic.
+
+This acknowledgement formally marks the transition from **structural ownership** (Phase 3) to **real‑world integration** (Phase 4), while preserving the GENISYS protocol as a closed, validated semantic core.
+
+---
+
+### Goal
+
+Add the first real transport without contaminating core protocol logic.
 
 ### Goal
 
@@ -155,11 +223,13 @@ Add the first real transport without contaminating core protocol logic.
 ### Work items
 
 - Implement `UdpTransportAdapter`
+
   - Socket lifecycle management
   - Datagram send/receive
   - Emit `TransportUp` / `TransportDown`
 
 - Implement decoding pipeline:
+
   - Bytes → Frames
   - Frames → Messages
   - Messages → `GenisysEvent`
@@ -188,7 +258,9 @@ Replace synthetic timers with real timing infrastructure.
 ### Work items
 
 - Implement executor‑owned timer service
+
 - Map intents to:
+
   - Timer arm
   - Timer cancel
 
@@ -216,10 +288,12 @@ Make the system explain its behavior without violating architectural purity.
 ### Work items
 
 - Emit observability signals for:
+
   - State transitions
   - Intent execution
 
 - Bind multiple sinks:
+
   - Logging
   - Metrics
   - Tracing
@@ -322,32 +396,36 @@ With this change, Phase 1 no longer contains any acknowledged gaps or “known 
 
 Phase 1 establishes the following facts as *true and tested*:
 
-1. **Protocol semantics are transport‑independent**  
+1. **Protocol semantics are transport‑independent**\
    The GENISYS protocol can be expressed, reasoned about, and validated entirely in terms of semantic events and state transitions.
 
-2. **Reducers are pure and exhaustive**  
+2. **Reducers are pure and exhaustive**\
    Reducers:
+
    - Perform no I/O
    - Perform no logging
    - Perform no scheduling
    - See only semantically valid events
 
-3. **Executor behavior is non‑inventive**  
+3. **Executor behavior is non‑inventive**\
    The executor:
+
    - Interprets intents atomically
    - Applies deterministic precedence rules
    - Does not invent retries, polls, or protocol sequencing
 
-4. **Initialization and recovery semantics are correct**  
+4. **Initialization and recovery semantics are correct**
+
    - Recall‑until‑active behavior is validated
    - TransportDown globally suppresses protocol activity
    - TransportUp forces re‑initialization via Recall
 
-5. **Failure and retry behavior is deterministic**  
+5. **Failure and retry behavior is deterministic**
+
    - Timeouts escalate retries deterministically
    - Failed slaves re‑enter Recall without corrupting global state
 
-6. **The protocol core is test‑complete**  
+6. **The protocol core is test‑complete**\
    All GENISYS protocol flows defined in Phase 1 are exercised via executable semantic tests, not transport simulations.
 
 ---
@@ -388,19 +466,17 @@ Phase 2 is complete because the GENISYS reducer–executor core has been exerci
 
 Specifically:
 
-- All Phase 2 stress scenarios were implemented using **existing ****GenisysEvent**** types only**
+- All Phase 2 stress scenarios were implemented using **existing `GenisysEvent` types only**
 - No new protocol rules, state transitions, or executor behaviors were introduced
 - All issues discovered during Phase 2 were resolved by **correcting test assumptions**, not by modifying reducer logic
 
 This demonstrates that the protocol semantics defined in `genisys.md` and enforced by the reducer are **stable under stress**, not merely under idealized flows.
 
----
-
 ### B.2 What Phase 2 proved
 
 Phase 2 establishes the following facts as *true and tested*:
 
-1. **Reducer behavior is deterministic under adversarial ordering**\
+1. **Reducer behavior is deterministic under adversarial ordering**  
    Duplicate events, reordered events, and delayed events do not produce nondeterministic state or illegal transitions.
 
 2. **Failure semantics are phase‑scoped and correct**
@@ -423,38 +499,74 @@ Phase 2 establishes the following facts as *true and tested*:
 
    - `TransportDown → TransportUp` forces a return to `INITIALIZING`
    - All slaves are re‑entered into recall semantics
-   - Transient internal phases (e.g. `SEND_CONTROLS`) are correctly treated as non‑stable
+   - Transient internal phases are correctly treated as non‑stable
 
 6. **Closed reducer–executor loop semantics are respected**
 
    - Immediate executor‑driven advancement does not violate protocol law
-   - Tests assert *semantic invariants*, not transient scheduling artifacts
+   - Tests assert semantic invariants, not transient scheduling artifacts
 
 ---
 
-### B.3 What Phase 2 explicitly did *not* attempt
+## Appendix C — Phase 3 Completion Notes
 
-Phase 2 deliberately excluded:
+This appendix records **why Phase 3 is formally closed**, what architectural risks were addressed, and what guarantees now hold before entering Phase 4.
 
-- Production controller ownership
-- Threading or concurrency models
-- Real transport adapters
-- Real timing infrastructure
-- Performance or throughput evaluation
+### C.1 Why Phase 3 is closed
 
-Phase 2 is strictly concerned with **semantic correctness under stress**, not deployment realism.
+Phase 3 is complete because a **production‑shaped controller** has been introduced **without altering protocol semantics**, and all previously validated behavior has been preserved.
 
----
+Specifically:
 
-### B.4 Implication for Phase 3
+- `GenisysWaysideController` owns:
+  - the event queue
+  - reducer invocation
+  - executor invocation
+  - controller state lifecycle
 
-Because Phase 2 is closed:
+- No protocol logic was moved, duplicated, or reinterpreted
+- No new sources of behavior were introduced
+- All Phase 1 and Phase 2 tests pass unchanged when executed against the controller
 
-- The reducer and executor are considered **stress‑validated**
-- Phase 3 may introduce a production‑shaped controller **without modifying protocol logic**
-- All Phase 1 and Phase 2 tests must continue to pass unchanged when run against the Phase 3 controller
+This confirms that the GENISYS protocol core is not merely correct in isolation, but **correct under realistic structural ownership**.
 
-Phase 3 therefore transitions the project from **semantic validation** to **structural ownership**, not from correctness to correctness.
+### C.2 What Phase 3 proved
 
-This clean separation is intentional and preserves the architectural integrity of the GENISYS WaysideController.
+Phase 3 establishes the following facts as *true and tested*:
+
+1. **Protocol semantics survive production ownership**  
+   Hosting the reducer and executor inside a controller does not alter behavior.
+
+2. **Controller responsibilities are purely structural**  
+   The controller manages sequencing and ownership only; it does not invent or reinterpret semantics.
+
+3. **Historical tests remain authoritative**  
+   Phase 1 and Phase 2 tests act as non‑negotiable regression oracles across architectural evolution.
+
+4. **Stepwise and quiescent execution semantics coexist safely**  
+   Both immediate (`apply`) and queued (`submit` + `runToQuiescence`) execution models behave consistently.
+
+5. **The system is ready for real integration**  
+   With ownership concerns resolved, subsequent phases may safely introduce transport, timers, and observability.
+
+### C.3 What Phase 3 explicitly did *not* attempt
+
+Phase 3 deliberately excluded:
+
+- Real transports or sockets
+- Concurrency or threading models
+- Real timers or clocks
+- Performance or throughput optimization
+
+These concerns are deferred intentionally to later phases.
+
+### C.4 Implication for Phase 4
+
+Because Phase 3 is closed:
+
+- Phase 4 may introduce real transport adapters (UDP) without touching reducer logic
+- Decode pipelines may be added so long as they emit semantic events only
+- Any protocol regression in Phase 4 is a **transport‑integration defect**, not a semantic defect
+
+Phase 3 therefore represents the point at which the GENISYS WaysideController transitions from a **validated semantic core** to a **deployable system architecture**.
 
