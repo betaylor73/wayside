@@ -5,15 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="131641a4-d331-40d6-bf46-7efcd0a468f1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/markdown.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/doc/GenisysIntentExecutorBehavior.md" beforeDir="false" afterPath="$PROJECT_DIR$/doc/GenisysIntentExecutorBehavior.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/state/GenisysStateReducer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/state/GenisysStateReducer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/questrail/wayside/protocol/genisys/internal/state/GenisysStateReducerTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/questrail/wayside/protocol/genisys/internal/state/GenisysStateReducerTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/questrail/wayside/protocol/genisys/test/exec/GenisysReducerExecutorIntegrationTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/questrail/wayside/protocol/genisys/test/exec/GenisysReducerExecutorIntegrationTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,6 +16,23 @@
     <projectState path="$PROJECT_DIR$">
       <ProjectState />
     </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <task path="$PROJECT_DIR$">
+          <activation />
+        </task>
+        <projects_view />
+      </state>
+    </system>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -44,6 +53,11 @@
     "Gradle.GenisysReducerExecutorIntegrationTest.initializationRecallThenPollFlow.executor": "Run",
     "Gradle.GenisysStateReducerTest.executor": "Run",
     "Gradle.GenisysStateReducerTest.recallResponseTransitionsToSendControls.executor": "Run",
+    "Gradle.GenisysSyntheticEventSourcesTest.executor": "Run",
+    "Gradle.GenisysSyntheticEventSourcesTest.failureCounterIncrementsMonotonicallyUnderRepeatedTimeouts.executor": "Run",
+    "Gradle.GenisysSyntheticEventSourcesTest.messageAfterTimeoutDoesNotBreakDeterminism.executor": "Run",
+    "Gradle.GenisysSyntheticEventSourcesTest.multiSlaveIsolationUnderAdversarialOrdering.executor": "Run",
+    "Gradle.GenisysSyntheticEventSourcesTest.transportDownMidCycleForcesGlobalReinitialization.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -61,8 +75,8 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Gradle.GenisysStateReducerTest.recallResponseTransitionsToSendControls">
-    <configuration name="GenisysReducerExecutorIntegrationTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+  <component name="RunManager" selected="Gradle.GenisysSyntheticEventSourcesTest.transportDownMidCycleForcesGlobalReinitialization">
+    <configuration name="GenisysSyntheticEventSourcesTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -75,7 +89,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.test.exec.GenisysReducerExecutorIntegrationTest&quot;" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.test.exec.GenisysSyntheticEventSourcesTest&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -86,7 +100,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="GenisysReducerExecutorIntegrationTest.initializationRecallThenPollFlow" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="GenisysSyntheticEventSourcesTest.failureCounterIncrementsMonotonicallyUnderRepeatedTimeouts" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -99,7 +113,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.test.exec.GenisysReducerExecutorIntegrationTest.initializationRecallThenPollFlow&quot;" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.test.exec.GenisysSyntheticEventSourcesTest.failureCounterIncrementsMonotonicallyUnderRepeatedTimeouts&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -110,7 +124,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="GenisysStateReducerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="GenisysSyntheticEventSourcesTest.messageAfterTimeoutDoesNotBreakDeterminism" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -123,7 +137,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.internal.state.GenisysStateReducerTest&quot;" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.test.exec.GenisysSyntheticEventSourcesTest.messageAfterTimeoutDoesNotBreakDeterminism&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -134,7 +148,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="GenisysStateReducerTest.recallResponseTransitionsToSendControls" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="GenisysSyntheticEventSourcesTest.multiSlaveIsolationUnderAdversarialOrdering" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -147,7 +161,31 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.internal.state.GenisysStateReducerTest.recallResponseTransitionsToSendControls&quot;" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.test.exec.GenisysSyntheticEventSourcesTest.multiSlaveIsolationUnderAdversarialOrdering&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="GenisysSyntheticEventSourcesTest.transportDownMidCycleForcesGlobalReinitialization" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.test.exec.GenisysSyntheticEventSourcesTest.transportDownMidCycleForcesGlobalReinitialization&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -169,10 +207,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.GenisysStateReducerTest.recallResponseTransitionsToSendControls" />
-        <item itemvalue="Gradle.GenisysReducerExecutorIntegrationTest.initializationRecallThenPollFlow" />
-        <item itemvalue="Gradle.GenisysStateReducerTest" />
-        <item itemvalue="Gradle.GenisysReducerExecutorIntegrationTest" />
+        <item itemvalue="Gradle.GenisysSyntheticEventSourcesTest.transportDownMidCycleForcesGlobalReinitialization" />
+        <item itemvalue="Gradle.GenisysSyntheticEventSourcesTest.multiSlaveIsolationUnderAdversarialOrdering" />
+        <item itemvalue="Gradle.GenisysSyntheticEventSourcesTest.failureCounterIncrementsMonotonicallyUnderRepeatedTimeouts" />
+        <item itemvalue="Gradle.GenisysSyntheticEventSourcesTest" />
+        <item itemvalue="Gradle.GenisysSyntheticEventSourcesTest.messageAfterTimeoutDoesNotBreakDeterminism" />
       </list>
     </recent_temporary>
   </component>
@@ -191,7 +230,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1767050447091</updated>
-      <workItem from="1767050450133" duration="4240000" />
+      <workItem from="1767050450133" duration="6917000" />
     </task>
     <servers />
   </component>

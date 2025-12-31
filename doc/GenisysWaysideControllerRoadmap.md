@@ -101,7 +101,7 @@ Phase 2 introduces *no new protocol behavior* and *no new architectural respons
 - No architectural boundaries are violated
 - No new protocol logic is required to accommodate stress scenarios
 
-### Status: ▶️ **Active / Ready to Begin**
+### Status: ✅ **Complete**
 
 ---
 
@@ -290,7 +290,7 @@ Achieve rail‑grade robustness.
 
 - Phase 0: **Complete**
 - Phase 1: **Complete** (global lifecycle semantics closed)
-- Phase 2: **Ready to begin**
+- Phase 2: **Complete** (stress-validated under adversarial semantics)
 
 The intellectually hardest work — protocol semantics, state modeling, intent boundaries — is now complete. Remaining phases focus on **validation, integration, and adaptation**, not invention.
 
@@ -375,4 +375,86 @@ Because Phase 1 is closed:
 - Later phases may **adapt** the protocol core to transports and environments without contaminating its semantics
 
 Phase 1 therefore represents a **semantic foundation** that all subsequent work must preserve.
+
+---
+
+## Appendix B — Phase 2 Completion Notes
+
+This appendix records **why Phase 2 is formally closed**, what was *intentionally stressed*, and what semantic guarantees were confirmed before advancing to Phase 3.
+
+### B.1 Why Phase 2 is closed
+
+Phase 2 is complete because the GENISYS reducer–executor core has been exercised under **adversarial but legal semantic conditions** without requiring any reducer or protocol changes.
+
+Specifically:
+
+- All Phase 2 stress scenarios were implemented using **existing ****GenisysEvent**** types only**
+- No new protocol rules, state transitions, or executor behaviors were introduced
+- All issues discovered during Phase 2 were resolved by **correcting test assumptions**, not by modifying reducer logic
+
+This demonstrates that the protocol semantics defined in `genisys.md` and enforced by the reducer are **stable under stress**, not merely under idealized flows.
+
+---
+
+### B.2 What Phase 2 proved
+
+Phase 2 establishes the following facts as *true and tested*:
+
+1. **Reducer behavior is deterministic under adversarial ordering**\
+   Duplicate events, reordered events, and delayed events do not produce nondeterministic state or illegal transitions.
+
+2. **Failure semantics are phase‑scoped and correct**
+
+   - Failure counters increment monotonically only in phases where failures are meaningful
+   - Timeouts during `RECALL` do not pollute operational failure metrics
+   - Late valid responses may legally normalize failure state
+
+3. **Cross‑slave isolation is preserved**
+
+   - Failures, retries, and progress for one slave do not affect any other slave
+   - Interleaved multi‑slave sequences remain coherent and deterministic
+
+4. **Transport gating semantics are enforced globally**
+
+   - `TransportDown` suppresses all non‑transport events
+   - Stale messages and timeouts are ignored while transport is unavailable
+
+5. **Global re‑initialization semantics are correct**
+
+   - `TransportDown → TransportUp` forces a return to `INITIALIZING`
+   - All slaves are re‑entered into recall semantics
+   - Transient internal phases (e.g. `SEND_CONTROLS`) are correctly treated as non‑stable
+
+6. **Closed reducer–executor loop semantics are respected**
+
+   - Immediate executor‑driven advancement does not violate protocol law
+   - Tests assert *semantic invariants*, not transient scheduling artifacts
+
+---
+
+### B.3 What Phase 2 explicitly did *not* attempt
+
+Phase 2 deliberately excluded:
+
+- Production controller ownership
+- Threading or concurrency models
+- Real transport adapters
+- Real timing infrastructure
+- Performance or throughput evaluation
+
+Phase 2 is strictly concerned with **semantic correctness under stress**, not deployment realism.
+
+---
+
+### B.4 Implication for Phase 3
+
+Because Phase 2 is closed:
+
+- The reducer and executor are considered **stress‑validated**
+- Phase 3 may introduce a production‑shaped controller **without modifying protocol logic**
+- All Phase 1 and Phase 2 tests must continue to pass unchanged when run against the Phase 3 controller
+
+Phase 3 therefore transitions the project from **semantic validation** to **structural ownership**, not from correctness to correctness.
+
+This clean separation is intentional and preserves the architectural integrity of the GENISYS WaysideController.
 
