@@ -81,6 +81,43 @@ com.questrail.wayside.protocol.genisys
 
 Each package has a **specific responsibility** and **explicit dependency rules**.
 
+### Outbound Encoding Flow (Normative)
+
+The outbound GENISYS encoding pipeline is explicitly layered and symmetric with
+the inbound decoding pipeline.
+
+**Inbound:**
+
+    transport bytes
+        → GenisysFrameDecoder
+            → GenisysFrame
+                → GenisysMessageDecoder
+                    → GenisysMessage
+
+**Outbound:**
+
+    GenisysMessage
+        → GenisysMessageEncoder
+            → GenisysFrame
+                → GenisysFrameEncoder
+                    → transport bytes
+
+Responsibilities are strictly separated:
+
+* `internal.encode.GenisysMessageEncoder`
+    * Converts semantic GENISYS messages into wire-adjacent `GenisysFrame`s
+    * Selects protocol header bytes
+    * Encodes message payloads
+    * Determines **CRC presence** per GENISYS protocol rules
+
+* `codec.GenisysFrameEncoder`
+    * Applies **mechanical framing only**
+    * Appends CRC bytes when requested by the frame
+    * Applies byte escaping
+    * Appends the GENISYS frame terminator
+
+No component spans both semantic meaning and wire-mechanical responsibilities.
+
 ---
 
 ## 4. The Semantic Model (`.model`)

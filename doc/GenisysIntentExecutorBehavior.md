@@ -113,6 +113,29 @@ Typical mappings:
 
 The reducer decides *what* should happen next. The executor decides *how* that intent is realized on the wire.
 
+### Outbound Encoding Responsibilities
+
+When interpreting SEND_* intents, the executor is responsible only for selecting
+**which semantic `GenisysMessage` to transmit**.
+
+The outbound encoding pipeline is fixed and must be applied in order:
+
+    GenisysMessage
+        → GenisysMessageEncoder
+            → GenisysFrame
+                → GenisysFrameEncoder
+                    → transport transmission
+
+The executor must not:
+
+- select header byte values
+- decide CRC presence
+- perform framing or escaping
+- interact directly with raw transport bytes
+
+All wire-level mechanics are delegated to the encoding boundary.
+
+
 ---
 
 ## Timer management (Normative)

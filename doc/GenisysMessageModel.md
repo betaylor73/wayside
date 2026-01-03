@@ -113,6 +113,26 @@ Reducers must never receive raw frames or interpret header bytes directly.
 Semantic messages are the unit of protocol behavior. 
 Events carry meaning, not representation.
 
+### Message vs Wire Representation
+
+`GenisysMessage` represents **pure protocol semantics**.
+
+It intentionally contains **no information** about:
+
+- header byte values
+- CRC bytes or CRC algorithms
+- escaping rules
+- frame terminators
+
+Wire-level representation is introduced only at explicit architectural boundaries:
+
+* Message → Frame: `internal.encode.GenisysMessageEncoder`
+* Frame → Bytes: `codec.GenisysFrameEncoder`
+
+Reducers, schedulers, and state machines never observe or reason about wire-level
+mechanics.
+
+
 ---
 
 ## 8. Testing Implications

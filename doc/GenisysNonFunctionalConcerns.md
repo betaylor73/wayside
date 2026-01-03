@@ -26,6 +26,24 @@ The following principles apply to all non-functional concerns captured herein:
 - Implementation mechanisms (logging frameworks, file formats, libraries) are **replaceable**
 - Architectural intent must be **documented independently of code**
 
+### Encoding / Decoding Symmetry
+
+The GENISYS implementation enforces strict symmetry between inbound decoding and
+outbound encoding:
+
+* Inbound: bytes → frame → message
+* Outbound: message → frame → bytes
+
+This symmetry is intentional and required to:
+
+- prevent semantic leakage into wire mechanics
+- support deterministic testing
+- enable transport substitution (UDP, Netty, etc.)
+
+Any collapse of message-level and frame-level responsibilities is considered an
+architectural violation.
+
+
 ---
 
 ## 3. Observability

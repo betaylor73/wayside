@@ -216,10 +216,6 @@ This acknowledgement formally marks the transition from **structural ownership**
 
 Add the first real transport without contaminating core protocol logic.
 
-### Goal
-
-Add the first real transport without contaminating core protocol logic.
-
 ### Work items
 
 - Implement `UdpTransportAdapter`
@@ -245,7 +241,9 @@ Add the first real transport without contaminating core protocol logic.
 - GENISYS runs correctly over UDP
 - No changes to reducer logic
 
-### Status: ⏳ **Pending**
+### Status: 🟡 **In Progress**
+
+
 
 ---
 
@@ -365,6 +363,8 @@ Achieve rail‑grade robustness.
 - Phase 0: **Complete**
 - Phase 1: **Complete** (global lifecycle semantics closed)
 - Phase 2: **Complete** (stress-validated under adversarial semantics)
+- Phase 3: **Complete** (controller skeleton hosts core without reinterpretation)
+- Phase 4: **In Progress** (codec boundary complete; UDP adapter pending)
 
 The intellectually hardest work — protocol semantics, state modeling, intent boundaries — is now complete. Remaining phases focus on **validation, integration, and adaptation**, not invention.
 
@@ -389,8 +389,6 @@ The final blocking item for Phase 1 — the global lifecycle transition from `I
 - The behavior matches the normative requirements in `MasterStateMachine.md`
 
 With this change, Phase 1 no longer contains any acknowledged gaps or “known incompleteness.”
-
----
 
 ### A.2 What Phase 1 proved
 
@@ -428,8 +426,6 @@ Phase 1 establishes the following facts as *true and tested*:
 6. **The protocol core is test‑complete**\
    All GENISYS protocol flows defined in Phase 1 are exercised via executable semantic tests, not transport simulations.
 
----
-
 ### A.3 What Phase 1 explicitly did *not* attempt
 
 Phase 1 deliberately excluded:
@@ -441,8 +437,6 @@ Phase 1 deliberately excluded:
 - Configuration binding
 
 These exclusions are intentional and ensure that subsequent phases add **integration and realism**, not new protocol logic.
-
----
 
 ### A.4 Implication for subsequent phases
 
@@ -569,4 +563,86 @@ Because Phase 3 is closed:
 - Any protocol regression in Phase 4 is a **transport‑integration defect**, not a semantic defect
 
 Phase 3 therefore represents the point at which the GENISYS WaysideController transitions from a **validated semantic core** to a **deployable system architecture**.
+
+---
+
+## Appendix D — Phase 4 Completion Notes (Codec Boundary)
+
+This appendix records **what Phase 4 has completed to date**, what was *explicitly proven*, and why the codec boundary is now considered **audited and stable**, even though Phase 4 as a whole remains open pending full UDP transport integration.
+
+### D.1 Scope of Phase 4 work completed
+
+The completed portion of Phase 4 is limited strictly to the **codec boundary**, comprising:
+
+- Frame‑level encoding and decoding
+- Message‑level semantic encoding and decoding
+- Enforcement of protocol‑mandated CRC rules
+- End‑to‑end semantic round‑trip validation
+
+No transport adapters, sockets, threads, or timers are included in this scope.
+
+### D.2 What was proven
+
+The following properties are now *true and tested*:
+
+1. **Frame correctness is enforced at the codec boundary**
+
+   - `GenisysFrameEncoder` and `GenisysFrameDecoder` correctly implement GENISYS framing, escaping, and CRC correctness
+   - Corrupt or malformed frames are rejected before semantic decoding
+
+2. **Semantic CRC rules are enforced correctly**
+
+   - `$F1` (Acknowledge) explicitly forbids CRC
+   - `$FB` (Poll) uses CRC presence to indicate secure polling
+   - `$F2/$F3/$FC/$FD/$FE/$FA` require CRC and are rejected if missing
+
+   These rules are enforced at the **message semantic boundary**, not at the reducer or transport layers.
+
+3. **Encoder/decoder symmetry is proven**
+
+   - Representative GENISYS messages successfully complete the round trip:
+     
+     `GenisysMessage → Frame → Bytes → Frame → GenisysMessage`
+
+   - No‑payload and payload‑bearing messages are both covered
+
+4. **Payload delivery is lossless and isolated**
+
+   - Payload bytes emitted by the message encoder are delivered intact to the injected payload decoders
+   - Tests prove payload plumbing without inventing `ControlSet` or `IndicationSet` constructions
+
+5. **Architectural boundaries are preserved**
+
+   - Reducers never see frames or bytes
+   - Decoders emit semantic messages only
+   - Encoders act only in response to executor intents
+
+### D.3 What Phase 4 explicitly did *not* attempt
+
+The completed codec work deliberately excluded:
+
+- Socket lifecycle management
+- UDP or Netty adapters
+- Transport error handling
+- Threading or concurrency concerns
+- Timer or retry semantics
+
+These exclusions are intentional and ensure that codec correctness is validated *independently* of transport behavior.
+
+### D.4 Implication for remaining Phase 4 work
+
+Because the codec boundary is now audited and stable:
+
+- Remaining Phase 4 work is **pure integration**, not protocol design
+- Any future failures must be classified as:
+  - transport adapter defects, or
+  - environment‑specific integration issues
+
+Under no circumstances should remaining Phase 4 work require changes to:
+
+- reducer logic
+- executor semantics
+- GENISYS protocol rules
+
+The codec boundary therefore represents a **hard architectural seam** between validated protocol semantics and real‑world transport integration.
 
