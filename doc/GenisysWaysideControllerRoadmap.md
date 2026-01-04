@@ -241,11 +241,253 @@ Add the first real transport without contaminating core protocol logic.
 - GENISYS runs correctly over UDP
 - No changes to reducer logic
 
-### Status: 🟡 **In Progress**
-
-
+### Status: ✅ **Complete**
 
 ---
+
+### Phase 4 Integration Sketch — UDP Adapter (Against Frozen Codec Boundary)
+
+This section sketches the **remaining Phase 4 integration work** now that the codec boundary has been audited and frozen (see Appendix D). It is intentionally concrete and implementation‑oriented, while introducing **no new protocol semantics**.
+
+#### 1. Structural Placement
+
+The UDP adapter lives **outside** the controller and reducer, as a pure adapter layer:
+
+```
+DatagramSocket / Netty Channel
+        ↓
+UdpTransportAdapter
+        ↓
+ByteDecoderPipeline
+  (frame → message)
+        ↓
+GenisysEvent
+        ↓
+GenisysWaysideController
+```
+
+Outbound flow is strictly inverted:
+
+```
+Executor Intent
+        ↓
+GenisysMessageEncoder
+        ↓
+GenisysFrameEncoder
+        ↓
+UDP Send
+```
+
+At no point does the controller, reducer, or executor gain awareness of UDP, sockets, ports, or byte arrays.
+
+---
+
+#### 2. Inbound Path (Receive)
+
+**Responsibility:** Convert raw datagrams into semantic events or discard them.
+
+Steps:
+
+1. UDP socket receives a datagram
+2. Datagram bytes passed to `GenisysFrameDecoder`
+   - Invalid framing / CRC → drop silently or emit transport‑level diagnostic
+3. Decoded `GenisysFrame` passed to `GenisysMessageDecoder`
+   - Semantic violations → drop, do not emit events
+4. Valid `GenisysMessage` wrapped as `MessageReceived`
+5. Event submitted to `GenisysWaysideController`
+
+**Invariant:**
+
+- Only fully validated semantic events reach the controller
+- No partial or ambiguous input propagates inward
+
+---
+
+#### 3. Outbound Path (Send)
+
+**Responsibility:** Emit protocol‑correct bytes in response to executor intents.
+
+Steps:
+
+1. Executor emits an outbound intent (e.g., `SendMessage`)
+2. Adapter invokes `GenisysMessageEncoder`
+3. Resulting `GenisysFrame` passed to `GenisysFrameEncoder`
+4. Encoded bytes sent via UDP socket
+
+**Invariant:**
+
+- Adapter never originates messages on its own
+- All outbound traffic is causally linked to executor intents
+
+---
+
+#### 4. Transport Lifecycle Mapping
+
+The UDP adapter is responsible for mapping socket state into **semantic transport events**:
+
+- Socket bind / channel active → emit `TransportUp`
+- Socket close / fatal I/O error → emit `TransportDown`
+
+Rules:
+
+- Adapter may emit multiple `TransportUp`/`TransportDown` cycles
+- Controller enforces global gating semantics
+- Adapter must not debounce or reinterpret transport state
+
+---
+
+#### 5. Error Handling & Classification
+
+All failures observed during Phase 4 integration must be classified as one of:
+
+- **Decode errors** (bad bytes, malformed frames)
+- **Transport errors** (socket closed, send failure)
+
+Explicitly *not allowed*:
+
+- Retrying messages in the adapter
+- Suppressing `TransportDown`
+- Inventing protocol recovery behavior
+
+---
+
+#### 6. Test Strategy for Phase 4 Completion
+
+To close Phase 4 fully, the following tests are expected:
+
+- UDP loopback integration test:
+  - Datagram → decode → `MessageReceived` → controller
+- Outbound intent → UDP send verification
+- Transport flap test:
+  - UDP close → `TransportDown`
+  - Rebind → `TransportUp`
+
+These tests validate **integration correctness only**. Any semantic failures indicate a defect in the adapter, not the protocol core.
+
+---
+
+#### 7. Phase 4 Exit Condition (Updated)
+
+Phase 4 may be marked **Complete** once:
+
+- UDP adapter correctly emits and consumes semantic events
+- All codec tests remain unchanged and passing
+- No reducer, executor, or protocol modifications are required
+
+At that point, Phase 4 transitions from *integration* to *operational readiness*.
+
+---
+
+### Phase 4 — Implementation Notes (Completed)
+
+These notes are additive to the Phase 4 sketch above. The sketch remains valid as design intent; the material below records what was actually built, verified, and explicitly deferred.
+
+#### 4.1 Scope Confirmation
+Phase 4 work was limited strictly to **UDP transport integration** against the frozen codec boundary. No changes were made to:
+
+- `genisys.md`
+- protocol semantics
+- reducer logic
+- state transitions
+- codec behavior (frame/message encode/decode)
+
+All Phase 4 work preserved the binding architectural invariants:
+
+- Decode-before-event
+- Reducers are semantic-only
+- No transport logic in controller, reducer, or executor
+- Adapters translate bytes ⇄ semantic events only
+- Transport defects ≠ protocol defects
+- Executor is the sole source of outbound protocol messages
+
+#### 4.2 Implemented Components
+
+**UdpTransportAdapter**
+- Introduced as the sole boundary between UDP datagrams and semantic GENISYS events/messages.
+- Inbound: `DatagramEndpoint` datagram → `GenisysFrameDecoder` → `GenisysMessageDecoder` → `GenisysMessageEvent.MessageReceived` → controller.
+- Enforces decode-before-event by dropping invalid frames or undecodable messages (no semantic event emitted).
+- Outbound: `GenisysMessage` → `GenisysMessageEncoder` → `GenisysFrameEncoder` → `DatagramEndpoint.send(...)`.
+- Lifecycle: `onTransportUp` / `onTransportDown` emit `GenisysTransportEvent.TransportUp` / `TransportDown` (cause treated as diagnostic-only).
+
+Explicit non-responsibilities:
+- No retries
+- No timing/scheduling
+- No recovery/backoff logic
+- No protocol-phase interpretation
+
+**UdpGenisysIntentExecutor**
+- Implements the existing `GenisysIntentExecutor` surface and consumes reducer-emitted `GenisysIntents`.
+- Mechanically maps intent kinds to semantic messages and delegates delivery via `UdpTransportAdapter.send(...)`.
+- Provides minimal execution bookkeeping required by existing intents (e.g., `RETRY_CURRENT` re-sends the last message sent to that station) without adding scheduling/timers.
+
+**GenisysUdpRuntime (Composition Root)**
+- Refactored into a pure composition root.
+- Owns construction and wiring of controller ↔ intent executor ↔ UDP transport adapter ↔ datagram endpoint.
+- Contains no codec logic, no reducer logic, and no transport logic beyond lifecycle delegation.
+
+#### 4.3 Verified Inbound Path
+
+Verified inbound execution path (decode-before-event):
+
+```
+UDP Datagram
+  → UdpTransportAdapter
+    → Frame decode
+      → Message decode
+        → MessageReceived event
+          → GenisysWaysideController
+```
+
+Invalid frames or undecodable messages are dropped and do not surface as semantic events.
+
+#### 4.4 Verified Outbound Path
+
+Verified outbound execution path (executor-authoritative):
+
+```
+Reducer
+  → GenisysIntents
+    → UdpGenisysIntentExecutor
+      → UdpTransportAdapter.send(...)
+        → Message encode
+          → Frame encode
+            → UDP send
+```
+
+All outbound protocol traffic is causally linked to executor intents; no other component originates protocol messages.
+
+#### 4.5 Transport Lifecycle Mapping
+
+- Endpoint start → `TransportUp`
+- Endpoint stop / failure → `TransportDown`
+
+Transport defects are surfaced semantically but are not reinterpreted as protocol defects.
+
+#### 4.6 Integration Test Coverage (Phase 4 Exit Gate)
+
+Phase 4 completion is validated by tests covering:
+- Inbound datagram → semantic event delivery
+- Outbound intent → encoded UDP send (including an outbound-only execution case)
+- Correct selection between `Poll` and `AcknowledgeAndPoll` when acknowledgment is pending
+- `securePolls` configuration propagation
+- Lifecycle wiring via `DatagramEndpoint.start()` / `stop()` (not direct adapter callback invocation)
+
+Tests validate boundary wiring and transport integration only; protocol semantics remain covered by earlier phases.
+
+#### 4.7 Explicit Deferrals
+
+The following concerns are explicitly deferred to Phase 5+:
+- Retry scheduling and backoff
+- Real-time timers and cadence control
+- Fault recovery policy
+- Observability sinks (beyond event emission)
+- Configuration binding for operational policy
+
+No partial or implicit Phase 5 behavior was introduced during Phase 4.
+
+#### 4.8 Phase 4 Closure
+
+With the above implementation and verification complete, **Phase 4 is formally closed**. All remaining UDP-related work is operational/policy-driven and must be planned under Phase 5.
 
 ## Phase 5 — Real Timer Integration
 
@@ -629,20 +871,25 @@ The completed codec work deliberately excluded:
 
 These exclusions are intentional and ensure that codec correctness is validated *independently* of transport behavior.
 
-### D.4 Implication for remaining Phase 4 work
+### D.4 Implication for Phase 4 completion
 
-Because the codec boundary is now audited and stable:
+With the completion of UDP transport integration and the formal close of Phase 4:
 
-- Remaining Phase 4 work is **pure integration**, not protocol design
-- Any future failures must be classified as:
-  - transport adapter defects, or
-  - environment‑specific integration issues
+- The codec boundary described in this appendix remains **fully audited, frozen, and authoritative**
+- No changes to frame encoding, message encoding, CRC rules, or semantic decoding are permitted
+- All Phase 4 transport integration work has been completed **strictly against this boundary**
 
-Under no circumstances should remaining Phase 4 work require changes to:
+As a result:
 
+- Any defects observed beyond Phase 4 must be classified as:
+    - Phase 5+ operational behavior (timing, retries, recovery), or
+    - deployment-specific transport/environment issues
+
+Under no circumstances should post-Phase 4 work require changes to:
+
+- GENISYS protocol semantics
 - reducer logic
 - executor semantics
-- GENISYS protocol rules
+- codec behavior (frame or message encode/decode)
 
-The codec boundary therefore represents a **hard architectural seam** between validated protocol semantics and real‑world transport integration.
-
+The codec boundary therefore represents a **permanent architectural seam** between validated protocol semantics and all future operational or transport behavior.

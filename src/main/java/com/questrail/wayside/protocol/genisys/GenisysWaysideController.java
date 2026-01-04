@@ -62,7 +62,7 @@ import java.util.Optional;
  * controller. Any failures indicate an error in this class, not in the
  * reducer, executor, or tests.</p>
  */
-public final class GenisysWaysideController
+public class GenisysWaysideController
 {
     private final GenisysStateReducer reducer;
     private final GenisysIntentExecutor executor;

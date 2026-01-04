@@ -3,19 +3,14 @@ package com.questrail.wayside.protocol.genisys.runtime;
 import com.questrail.wayside.protocol.genisys.GenisysWaysideController;
 import com.questrail.wayside.protocol.genisys.codec.GenisysFrameDecoder;
 import com.questrail.wayside.protocol.genisys.codec.GenisysFrameEncoder;
-import com.questrail.wayside.protocol.genisys.internal.decode.GenisysDecodeException;
 import com.questrail.wayside.protocol.genisys.internal.decode.GenisysMessageDecoder;
 import com.questrail.wayside.protocol.genisys.internal.encode.GenisysMessageEncoder;
-import com.questrail.wayside.protocol.genisys.internal.events.GenisysMessageEvent;
 import com.questrail.wayside.protocol.genisys.internal.events.GenisysTransportEvent;
-import com.questrail.wayside.protocol.genisys.internal.frame.GenisysFrame;
 import com.questrail.wayside.protocol.genisys.transport.DatagramEndpoint;
-import com.questrail.wayside.protocol.genisys.transport.DatagramEndpointListener;
+import com.questrail.wayside.protocol.genisys.transport.udp.UdpTransportAdapter;
 
 import java.net.SocketAddress;
-import java.time.Instant;
 import java.util.Objects;
-import java.util.Optional;
 
 import com.questrail.wayside.protocol.genisys.model.GenisysMessage;
 
@@ -39,10 +34,11 @@ import com.questrail.wayside.protocol.genisys.model.GenisysMessage;
  *
  * <pre>
  *   DatagramEndpoint
- *        → GenisysFrameDecoder
- *            → GenisysMessageDecoder
- *                → Semantic Event (MessageReceived)
- *                    → GenisysWaysideController
+ *        → UdpTransportAdapter
+ *            → GenisysFrameDecoder
+ *                → GenisysMessageDecoder
+ *                    → Semantic Event (MessageReceived)
+ *                        → GenisysWaysideController
  * </pre>
  *
  * <p>This flow guarantees that:</p>
@@ -58,8 +54,10 @@ import com.questrail.wayside.protocol.genisys.model.GenisysMessage;
  * <pre>
  *   GenisysIntentExecutor
  *        → GenisysUdpRuntime.send(...)
- *            → GenisysFrameEncoder
- *                → DatagramEndpoint
+ *            → UdpTransportAdapter.send(...)
+ *                → GenisysMessageEncoder
+ *                    → GenisysFrameEncoder
+ *                        → DatagramEndpoint
  * </pre>
  *
  * <p>This ensures that transport code never originates protocol messages and
@@ -71,7 +69,7 @@ import com.questrail.wayside.protocol.genisys.model.GenisysMessage;
  *   <li>Interpret protocol meaning</li>
  *   <li>Modify reducer or executor behavior</li>
  *   <li>Invent retries, polling, or timing behavior</li>
- *   <li>Perform byte-level decoding or encoding directly</li>
+ *   <li>Perform byte-level decoding or encoding directly (that is the adapter/codec boundary)</li>
  * </ul>
  *
  * <h2>Execution Model and Determinism</h2>
@@ -85,11 +83,7 @@ import com.questrail.wayside.protocol.genisys.model.GenisysMessage;
  */
 public final class GenisysUdpRuntime {
     private final GenisysWaysideController controller;
-    private final DatagramEndpoint endpoint;
-    private final GenisysFrameDecoder frameDecoder;
-    private final GenisysFrameEncoder frameEncoder;
-    private final GenisysMessageDecoder messageDecoder;
-    private final GenisysMessageEncoder messageEncoder;
+    private final UdpTransportAdapter transport;
 
     public GenisysUdpRuntime(GenisysWaysideController controller,
                              DatagramEndpoint endpoint,
@@ -98,13 +92,17 @@ public final class GenisysUdpRuntime {
                              GenisysMessageDecoder messageDecoder,
                              GenisysMessageEncoder messageEncoder) {
         this.controller = Objects.requireNonNull(controller, "controller");
-        this.endpoint = Objects.requireNonNull(endpoint, "endpoint");
-        this.frameDecoder = Objects.requireNonNull(frameDecoder, "frameDecoder");
-        this.frameEncoder = Objects.requireNonNull(frameEncoder, "frameEncoder");
-        this.messageDecoder = Objects.requireNonNull(messageDecoder, "messageDecoder");
-        this.messageEncoder = Objects.requireNonNull(messageEncoder, "messageEncoder");
 
-        this.endpoint.setListener(new Listener());
+        // Phase 4 boundary: UDP transport integration is performed by the adapter.
+        // The runtime is a composition root only.
+        this.transport = new UdpTransportAdapter(
+                this.controller,
+                Objects.requireNonNull(endpoint, "endpoint"),
+                Objects.requireNonNull(frameDecoder, "frameDecoder"),
+                Objects.requireNonNull(frameEncoder, "frameEncoder"),
+                Objects.requireNonNull(messageDecoder, "messageDecoder"),
+                Objects.requireNonNull(messageEncoder, "messageEncoder")
+        );
     }
 
     /**
@@ -114,62 +112,14 @@ public final class GenisysUdpRuntime {
      * once {@link GenisysTransportEvent.TransportUp} is delivered to the controller.</p>
      */
     public void start() {
-        endpoint.start();
+        transport.start();
     }
 
     /**
      * Stop the runtime and release transport resources.
      */
     public void stop() {
-        endpoint.stop();
-    }
-
-    // -------------------------------------------------------------------------
-    // Transport Listener
-    // -------------------------------------------------------------------------
-
-    private final class Listener implements DatagramEndpointListener {
-        @Override
-        public void onTransportUp() {
-            controller.submit(new GenisysTransportEvent.TransportUp(Instant.now()));
-            controller.drain();
-        }
-
-        @Override
-        public void onTransportDown(Throwable cause) {
-            controller.submit(new GenisysTransportEvent.TransportDown(Instant.now()));
-            controller.drain();
-        }
-
-        @Override
-        public void onDatagram(SocketAddress remote, byte[] payload) {
-            // Decode bytes -> frame
-            Optional<GenisysFrame> frameOpt = frameDecoder.decode(payload);
-            if (frameOpt.isEmpty()) {
-                // Framing error: transport-level defect. Drop silently.
-                return;
-            }
-
-            GenisysFrame frame = frameOpt.get();
-
-            // Decode frame -> message
-            final GenisysMessage message;
-            try {
-                message = messageDecoder.decode(frame);
-            } catch (GenisysDecodeException e) {
-                // Protocol decode failure: treat as invalid inbound data and drop.
-                // This is an integration/framing defect, not a protocol behavior signal.
-                return;
-            }
-
-            // Emit semantic event (decode-before-event boundary)
-            controller.submit(new GenisysMessageEvent.MessageReceived(
-                    Instant.now(),
-                    message.station().value(),
-                    message
-            ));
-            controller.drain();
-        }
+        transport.stop();
     }
 
     // -------------------------------------------------------------------------
@@ -186,8 +136,7 @@ public final class GenisysUdpRuntime {
         Objects.requireNonNull(remote, "remote");
         Objects.requireNonNull(message, "message");
 
-        GenisysFrame frame = messageEncoder.encode(message);
-        byte[] payload = frameEncoder.encode(frame);
-        endpoint.send(remote, payload);
+        // Phase 4 boundary: encoding and UDP send are delegated to the adapter/codec pipeline.
+        transport.send(remote, message);
     }
 }

@@ -5,37 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="131641a4-d331-40d6-bf46-7efcd0a468f1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/doc/GenisysLayeringAndControllerResponsibilities.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/doc/Phase1StatusAndNextStep.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/doc/Phase4IntegrationPlan.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/GenisysFrameDecoder.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/GenisysFrameEncoder.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/impl/CrcException.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/impl/DefaultGenisysFrameDecoder.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/impl/DefaultGenisysFrameEncoder.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/impl/EscapeException.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/impl/FramingException.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/impl/GenisysCrc.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/impl/GenisysEscaping.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/impl/GenisysFraming.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/impl/package-info.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/codec/package-info.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/encode/GenisysMessageEncoder.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/runtime/GenisysUdpRuntime.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/transport/DatagramEndpoint.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/transport/DatagramEndpointListener.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/transport/package-info.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/transport/udp/netty/NettyUdpDatagramEndpoint.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/test/java/com/questrail/wayside/protocol/genisys/internal/decode/GenisysMessageDecoderTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/com/questrail/wayside/protocol/genisys/transport/FakeDatagramEndpoint.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/doc/GenisysIntentExecutorBehavior.md" beforeDir="false" afterPath="$PROJECT_DIR$/doc/GenisysIntentExecutorBehavior.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/doc/GenisysMessageModel.md" beforeDir="false" afterPath="$PROJECT_DIR$/doc/GenisysMessageModel.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/doc/GenisysNonFunctionalConcerns.md" beforeDir="false" afterPath="$PROJECT_DIR$/doc/GenisysNonFunctionalConcerns.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/doc/GenisysPackageArchitecture.md" beforeDir="false" afterPath="$PROJECT_DIR$/doc/GenisysPackageArchitecture.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/doc/GenisysWaysideControllerRoadmap.md" beforeDir="false" afterPath="$PROJECT_DIR$/doc/GenisysWaysideControllerRoadmap.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/GenisysWaysideController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/GenisysWaysideController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/decode/GenisysMessageDecoder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/decode/GenisysMessageDecoder.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/runtime/GenisysUdpRuntime.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/runtime/GenisysUdpRuntime.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -102,6 +77,13 @@
     "Gradle.GenisysSyntheticEventSourcesTest.messageAfterTimeoutDoesNotBreakDeterminism.executor": "Run",
     "Gradle.GenisysSyntheticEventSourcesTest.multiSlaveIsolationUnderAdversarialOrdering.executor": "Run",
     "Gradle.GenisysSyntheticEventSourcesTest.transportDownMidCycleForcesGlobalReinitialization.executor": "Run",
+    "Gradle.UdpGenisysIntentExecutorTest.executor": "Run",
+    "Gradle.UdpGenisysIntentExecutorTest.pollNextRespectsSecurePollsConfiguration.executor": "Run",
+    "Gradle.UdpGenisysIntentExecutorTest.pollNextSendsAcknowledgeAndPollWhenAckPending.executor": "Run",
+    "Gradle.UdpTransportIntegrationTest.executor": "Run",
+    "Gradle.UdpTransportIntegrationTest.outboundOnlySendRecallIntentProducesUdpDatagram.executor": "Run",
+    "Gradle.UdpTransportIntegrationTest.transportDownEventIsSubmittedToController.executor": "Run",
+    "Gradle.UdpTransportIntegrationTest.transportUpEventIsSubmittedToController.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
@@ -122,8 +104,8 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Gradle.GenisysEncodeDecodeRoundTripTest.controlDataRoundTrip_payloadDelivered">
-    <configuration name="GenisysEncodeDecodeRoundTripTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+  <component name="RunManager" selected="Gradle.UdpTransportIntegrationTest.transportDownEventIsSubmittedToController">
+    <configuration name="UdpGenisysIntentExecutorTest.pollNextRespectsSecurePollsConfiguration" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -136,7 +118,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.GenisysEncodeDecodeRoundTripTest&quot;" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.transport.udp.UdpGenisysIntentExecutorTest.pollNextRespectsSecurePollsConfiguration&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -147,7 +129,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="GenisysEncodeDecodeRoundTripTest.controlDataRoundTrip_payloadDelivered" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="UdpGenisysIntentExecutorTest.pollNextSendsAcknowledgeAndPollWhenAckPending" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -160,7 +142,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.GenisysEncodeDecodeRoundTripTest.controlDataRoundTrip_payloadDelivered&quot;" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.transport.udp.UdpGenisysIntentExecutorTest.pollNextSendsAcknowledgeAndPollWhenAckPending&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -171,7 +153,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="GenisysMessageDecoderTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="UdpTransportIntegrationTest.outboundOnlySendRecallIntentProducesUdpDatagram" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -184,7 +166,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.internal.decode.GenisysMessageDecoderTest&quot;" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.transport.udp.UdpTransportIntegrationTest.outboundOnlySendRecallIntentProducesUdpDatagram&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -195,7 +177,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="GenisysMessageDecoderTest.decodeControlCheckbackFrame" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="UdpTransportIntegrationTest.transportDownEventIsSubmittedToController" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -208,7 +190,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.internal.decode.GenisysMessageDecoderTest.decodeControlCheckbackFrame&quot;" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.transport.udp.UdpTransportIntegrationTest.transportDownEventIsSubmittedToController&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -219,7 +201,7 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="GenisysMessageDecoderTest.decodeControlDataFrame" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+    <configuration name="UdpTransportIntegrationTest.transportUpEventIsSubmittedToController" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -232,7 +214,7 @@
           <list>
             <option value=":test" />
             <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.internal.decode.GenisysMessageDecoderTest.decodeControlDataFrame&quot;" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.transport.udp.UdpTransportIntegrationTest.transportUpEventIsSubmittedToController&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -254,11 +236,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.GenisysEncodeDecodeRoundTripTest.controlDataRoundTrip_payloadDelivered" />
-        <item itemvalue="Gradle.GenisysMessageDecoderTest.decodeControlCheckbackFrame" />
-        <item itemvalue="Gradle.GenisysMessageDecoderTest.decodeControlDataFrame" />
-        <item itemvalue="Gradle.GenisysMessageDecoderTest" />
-        <item itemvalue="Gradle.GenisysEncodeDecodeRoundTripTest" />
+        <item itemvalue="Gradle.UdpTransportIntegrationTest.transportDownEventIsSubmittedToController" />
+        <item itemvalue="Gradle.UdpTransportIntegrationTest.transportUpEventIsSubmittedToController" />
+        <item itemvalue="Gradle.UdpGenisysIntentExecutorTest.pollNextRespectsSecurePollsConfiguration" />
+        <item itemvalue="Gradle.UdpGenisysIntentExecutorTest.pollNextSendsAcknowledgeAndPollWhenAckPending" />
+        <item itemvalue="Gradle.UdpTransportIntegrationTest.outboundOnlySendRecallIntentProducesUdpDatagram" />
       </list>
     </recent_temporary>
   </component>
@@ -280,7 +262,9 @@
       <workItem from="1767050450133" duration="16017000" />
       <workItem from="1767216325155" duration="3056000" />
       <workItem from="1767381218204" duration="5462000" />
-      <workItem from="1767415282338" duration="12864000" />
+      <workItem from="1767415282338" duration="14511000" />
+      <workItem from="1767484964003" duration="3210000" />
+      <workItem from="1767549376756" duration="6850000" />
     </task>
     <servers />
   </component>
