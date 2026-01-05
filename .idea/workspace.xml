@@ -5,12 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="131641a4-d331-40d6-bf46-7efcd0a468f1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/test/java/com/questrail/wayside/protocol/genisys/transport/FakeDatagramEndpoint.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/doc/GenisysWaysideControllerRoadmap.md" beforeDir="false" afterPath="$PROJECT_DIR$/doc/GenisysWaysideControllerRoadmap.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/GenisysWaysideController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/GenisysWaysideController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/decode/GenisysMessageDecoder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/decode/GenisysMessageDecoder.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/runtime/GenisysUdpRuntime.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/runtime/GenisysUdpRuntime.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -99,12 +94,36 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "Settings.Markdown",
+    "settings.editor.selected.configurable": "junie.application.models",
     "to.speed.mode.migration.done": "true",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="Gradle.UdpTransportIntegrationTest.transportDownEventIsSubmittedToController">
+  <component name="RunManager" selected="Gradle.TimedGenisysIntentExecutorTest">
+    <configuration name="TimedGenisysIntentExecutorTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.test.exec.TimedGenisysIntentExecutorTest&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
     <configuration name="UdpGenisysIntentExecutorTest.pollNextRespectsSecurePollsConfiguration" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
@@ -143,30 +162,6 @@
             <option value=":test" />
             <option value="--tests" />
             <option value="&quot;com.questrail.wayside.protocol.genisys.transport.udp.UdpGenisysIntentExecutorTest.pollNextSendsAcknowledgeAndPollWhenAckPending&quot;" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="UdpTransportIntegrationTest.outboundOnlySendRecallIntentProducesUdpDatagram" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value=":test" />
-            <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.transport.udp.UdpTransportIntegrationTest.outboundOnlySendRecallIntentProducesUdpDatagram&quot;" />
           </list>
         </option>
         <option name="vmOptions" />
@@ -236,11 +231,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Gradle.TimedGenisysIntentExecutorTest" />
         <item itemvalue="Gradle.UdpTransportIntegrationTest.transportDownEventIsSubmittedToController" />
         <item itemvalue="Gradle.UdpTransportIntegrationTest.transportUpEventIsSubmittedToController" />
         <item itemvalue="Gradle.UdpGenisysIntentExecutorTest.pollNextRespectsSecurePollsConfiguration" />
         <item itemvalue="Gradle.UdpGenisysIntentExecutorTest.pollNextSendsAcknowledgeAndPollWhenAckPending" />
-        <item itemvalue="Gradle.UdpTransportIntegrationTest.outboundOnlySendRecallIntentProducesUdpDatagram" />
       </list>
     </recent_temporary>
   </component>
@@ -264,7 +259,7 @@
       <workItem from="1767381218204" duration="5462000" />
       <workItem from="1767415282338" duration="14511000" />
       <workItem from="1767484964003" duration="3210000" />
-      <workItem from="1767549376756" duration="6850000" />
+      <workItem from="1767549376756" duration="13716000" />
     </task>
     <servers />
   </component>
