@@ -6,13 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="131641a4-d331-40d6-bf46-7efcd0a468f1" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/exec/GenisysTimingPolicy.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/exec/GenisysTimingPolicy.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/exec/TimedGenisysIntentExecutor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/exec/TimedGenisysIntentExecutor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/runtime/GenisysUdpRuntime.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/runtime/GenisysUdpRuntime.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/transport/udp/UdpGenisysIntentExecutor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/transport/udp/UdpGenisysIntentExecutor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/transport/udp/UdpTransportAdapter.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/transport/udp/UdpTransportAdapter.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/questrail/wayside/protocol/genisys/test/exec/TimedGenisysIntentExecutorTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/questrail/wayside/protocol/genisys/test/exec/TimedGenisysIntentExecutorTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/questrail/wayside/protocol/genisys/transport/udp/UdpTransportIntegrationTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/questrail/wayside/protocol/genisys/transport/udp/UdpTransportIntegrationTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -270,7 +264,7 @@
       <workItem from="1767549376756" duration="15136000" />
       <workItem from="1767668635747" duration="7000" />
       <workItem from="1768028433272" duration="1148000" />
-      <workItem from="1768111117463" duration="2309000" />
+      <workItem from="1768111117463" duration="3161000" />
     </task>
     <servers />
   </component>
