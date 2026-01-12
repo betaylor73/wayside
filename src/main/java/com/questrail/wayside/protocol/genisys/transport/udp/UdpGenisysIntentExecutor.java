@@ -2,6 +2,7 @@ package com.questrail.wayside.protocol.genisys.transport.udp;
 
 import com.questrail.wayside.api.ControlSet;
 import com.questrail.wayside.protocol.genisys.internal.exec.GenisysIntentExecutor;
+import com.questrail.wayside.protocol.genisys.internal.exec.SendTracker;
 import com.questrail.wayside.protocol.genisys.internal.state.GenisysControllerState;
 import com.questrail.wayside.protocol.genisys.internal.state.GenisysIntents;
 import com.questrail.wayside.protocol.genisys.internal.state.GenisysSlaveState;
@@ -113,17 +114,43 @@ public final class UdpGenisysIntentExecutor implements GenisysIntentExecutor
      */
     private final Map<Integer, GenisysMessage> lastSentByStation = new HashMap<>();
 
+    /**
+     * Phase 5: optional tracker for communicating which station was sent to.
+     * Used by {@link com.questrail.wayside.protocol.genisys.internal.exec.TimedGenisysIntentExecutor}
+     * to arm timeouts for POLL_NEXT where station selection is executor-owned.
+     */
+    private final SendTracker sendTracker;
+
+    /**
+     * Phase 4 constructor (no send tracking).
+     */
     public UdpGenisysIntentExecutor(UdpTransportAdapter transport,
                                    Supplier<GenisysControllerState> stateSupplier,
                                    IntFunction<SocketAddress> remoteResolver,
                                    IntFunction<ControlSet> controlSetProvider,
                                    boolean securePolls)
     {
+        this(transport, stateSupplier, remoteResolver, controlSetProvider, securePolls, null);
+    }
+
+    /**
+     * Phase 5 constructor with send tracking.
+     *
+     * @param sendTracker optional tracker for recording which station was sent to (may be null)
+     */
+    public UdpGenisysIntentExecutor(UdpTransportAdapter transport,
+                                   Supplier<GenisysControllerState> stateSupplier,
+                                   IntFunction<SocketAddress> remoteResolver,
+                                   IntFunction<ControlSet> controlSetProvider,
+                                   boolean securePolls,
+                                   SendTracker sendTracker)
+    {
         this.transport = Objects.requireNonNull(transport, "transport");
         this.stateSupplier = Objects.requireNonNull(stateSupplier, "stateSupplier");
         this.remoteResolver = Objects.requireNonNull(remoteResolver, "remoteResolver");
         this.controlSetProvider = Objects.requireNonNull(controlSetProvider, "controlSetProvider");
         this.securePolls = securePolls;
+        this.sendTracker = sendTracker; // may be null
     }
 
     @Override
@@ -270,5 +297,10 @@ public final class UdpGenisysIntentExecutor implements GenisysIntentExecutor
 
         // Bookkeeping for RETRY_CURRENT.
         lastSentByStation.put(stationValue, message);
+
+        // Phase 5: notify tracker so timed executor can arm timeout.
+        if (sendTracker != null) {
+            sendTracker.recordSend(stationValue);
+        }
     }
 }

@@ -6,6 +6,7 @@ import com.questrail.wayside.protocol.genisys.codec.GenisysFrameEncoder;
 import com.questrail.wayside.protocol.genisys.internal.decode.GenisysMessageDecoder;
 import com.questrail.wayside.protocol.genisys.internal.encode.GenisysMessageEncoder;
 import com.questrail.wayside.protocol.genisys.internal.events.GenisysTransportEvent;
+import com.questrail.wayside.protocol.genisys.internal.exec.GenisysMonotonicActivityTracker;
 import com.questrail.wayside.protocol.genisys.transport.DatagramEndpoint;
 import com.questrail.wayside.protocol.genisys.transport.udp.UdpTransportAdapter;
 
@@ -85,23 +86,43 @@ public final class GenisysUdpRuntime {
     private final GenisysWaysideController controller;
     private final UdpTransportAdapter transport;
 
+    /**
+     * Phase 4 constructor (no activity tracking).
+     */
     public GenisysUdpRuntime(GenisysWaysideController controller,
                              DatagramEndpoint endpoint,
                              GenisysFrameDecoder frameDecoder,
                              GenisysFrameEncoder frameEncoder,
                              GenisysMessageDecoder messageDecoder,
                              GenisysMessageEncoder messageEncoder) {
+        this(controller, endpoint, frameDecoder, frameEncoder, messageDecoder, messageEncoder, null);
+    }
+
+    /**
+     * Phase 5 constructor with activity tracking.
+     *
+     * @param activityTracker optional activity tracker for timeout suppression (may be null)
+     */
+    public GenisysUdpRuntime(GenisysWaysideController controller,
+                             DatagramEndpoint endpoint,
+                             GenisysFrameDecoder frameDecoder,
+                             GenisysFrameEncoder frameEncoder,
+                             GenisysMessageDecoder messageDecoder,
+                             GenisysMessageEncoder messageEncoder,
+                             GenisysMonotonicActivityTracker activityTracker) {
         this.controller = Objects.requireNonNull(controller, "controller");
 
-        // Phase 4 boundary: UDP transport integration is performed by the adapter.
+        // Phase 4/5 boundary: UDP transport integration is performed by the adapter.
         // The runtime is a composition root only.
+        // Phase 5: Optional activity tracker for semantic timeout suppression.
         this.transport = new UdpTransportAdapter(
                 this.controller,
                 Objects.requireNonNull(endpoint, "endpoint"),
                 Objects.requireNonNull(frameDecoder, "frameDecoder"),
                 Objects.requireNonNull(frameEncoder, "frameEncoder"),
                 Objects.requireNonNull(messageDecoder, "messageDecoder"),
-                Objects.requireNonNull(messageEncoder, "messageEncoder")
+                Objects.requireNonNull(messageEncoder, "messageEncoder"),
+                activityTracker  // May be null (Phase 4 mode)
         );
     }
 

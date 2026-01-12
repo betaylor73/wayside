@@ -12,6 +12,7 @@ import com.questrail.wayside.protocol.genisys.codec.impl.DefaultGenisysFrameEnco
 import com.questrail.wayside.protocol.genisys.internal.decode.GenisysMessageDecoder;
 import com.questrail.wayside.protocol.genisys.internal.encode.GenisysMessageEncoder;
 import com.questrail.wayside.protocol.genisys.internal.exec.GenisysIntentExecutor;
+import com.questrail.wayside.protocol.genisys.internal.exec.GenisysMonotonicActivityTracker;
 import com.questrail.wayside.protocol.genisys.internal.frame.GenisysFrame;
 import com.questrail.wayside.protocol.genisys.internal.state.GenisysControllerState;
 import com.questrail.wayside.protocol.genisys.internal.state.GenisysIntents;
@@ -20,6 +21,7 @@ import com.questrail.wayside.protocol.genisys.model.ControlData;
 import com.questrail.wayside.protocol.genisys.model.GenisysMessage;
 import com.questrail.wayside.protocol.genisys.model.GenisysStationAddress;
 import com.questrail.wayside.protocol.genisys.model.IndicationData;
+import com.questrail.wayside.protocol.genisys.time.ManualMonotonicClock;
 import com.questrail.wayside.protocol.genisys.transport.FakeDatagramEndpoint;
 
 import org.junit.jupiter.api.Test;
@@ -329,6 +331,63 @@ final class UdpTransportIntegrationTest {
         assertTrue(outboundMsg instanceof com.questrail.wayside.protocol.genisys.model.Recall,
                 "Outbound message should be Recall");
         assertEquals(1, outboundMsg.station().value());
+    }
+
+    @Test
+    void inboundDatagramRecordsSemanticActivityWhenTrackerProvided() {
+        ManualMonotonicClock clock = new ManualMonotonicClock();
+        GenisysMonotonicActivityTracker activityTracker = new GenisysMonotonicActivityTracker(clock);
+
+        // Advance clock so activity timestamp is non-zero
+        clock.advanceMillis(100);
+
+        MockController controller = new MockController();
+        FakeDatagramEndpoint endpoint = new FakeDatagramEndpoint();
+
+        SignalIndex<IndicationId> indicationIndex = new ArraySignalIndex<>(
+                new TestIndicationId(10),
+                new TestIndicationId(11)
+        );
+        IndicationSet image = IndicationSet.empty(indicationIndex);
+
+        DefaultGenisysFrameDecoder frameDecoder = new DefaultGenisysFrameDecoder();
+        DefaultGenisysFrameEncoder frameEncoder = new DefaultGenisysFrameEncoder();
+        GenisysMessageDecoder messageDecoder = new GenisysMessageDecoder(
+                p -> image,
+                p -> ControlSet.empty(new ArraySignalIndex<>())
+        );
+        GenisysMessageEncoder messageEncoder = new GenisysMessageEncoder(
+                i -> new byte[image.allSignals().size() / 8 + 1],
+                c -> new byte[0]
+        );
+
+        // Use Phase 5 constructor with activity tracker
+        UdpTransportAdapter adapter = new UdpTransportAdapter(
+                controller,
+                endpoint,
+                frameDecoder,
+                frameEncoder,
+                messageDecoder,
+                messageEncoder,
+                activityTracker
+        );
+
+        // GIVEN: no prior activity for station 1
+        assertEquals(0, activityTracker.lastActivityNanos(1));
+
+        // WHEN: inject a valid datagram from station 1
+        SocketAddress remote = new InetSocketAddress("127.0.0.1", 9100);
+        GenisysMessage inbound = new IndicationData(GenisysStationAddress.of(1), image);
+        byte[] inboundDatagram = frameEncoder.encode(messageEncoder.encode(inbound));
+        endpoint.injectDatagram(remote, inboundDatagram);
+
+        // THEN: activity should be recorded for station 1
+        long activity = activityTracker.lastActivityNanos(1);
+        assertTrue(activity > 0, "Activity should be recorded for station 1");
+        assertEquals(clock.nowNanos(), activity, "Activity timestamp should match clock");
+
+        // AND: other stations should have no activity
+        assertEquals(0, activityTracker.lastActivityNanos(2));
     }
 
     // Helper for manual verification

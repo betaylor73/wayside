@@ -515,7 +515,7 @@ Replace synthetic timers with real timing infrastructure.
 
 - Protocol timing behaves correctly under real time
 
-### Status: ⏳ **Pending**
+### Status: ✅ **Complete**
 
 ---
 
@@ -606,9 +606,10 @@ Achieve rail‑grade robustness.
 - Phase 1: **Complete** (global lifecycle semantics closed)
 - Phase 2: **Complete** (stress-validated under adversarial semantics)
 - Phase 3: **Complete** (controller skeleton hosts core without reinterpretation)
-- Phase 4: **In Progress** (codec boundary complete; UDP adapter pending)
+- Phase 4: **Complete** (UDP transport adapter with frozen codec boundary)
+- Phase 5: **Complete** (real timer integration with activity-based timeout suppression)
 
-The intellectually hardest work — protocol semantics, state modeling, intent boundaries — is now complete. Remaining phases focus on **validation, integration, and adaptation**, not invention.
+The intellectually hardest work — protocol semantics, state modeling, intent boundaries, transport integration, and timing infrastructure — is now complete. Remaining phases focus on **observability, configuration, and production hardening**, not protocol or timing invention.
 
 ---
 
@@ -893,3 +894,122 @@ Under no circumstances should post-Phase 4 work require changes to:
 - codec behavior (frame or message encode/decode)
 
 The codec boundary therefore represents a **permanent architectural seam** between validated protocol semantics and all future operational or transport behavior.
+
+---
+
+## Appendix E — Phase 5 Completion Notes
+
+This appendix records **why Phase 5 is formally closed**, what was implemented, and what guarantees now hold before entering Phase 6.
+
+### E.1 Completion Date
+
+Phase 5 was formally closed on **2026-01-11**.
+
+### E.2 Key Deliverables and Components
+
+Phase 5 introduced real timing infrastructure while preserving all Phase 1–4 invariants. The following production components were implemented:
+
+**Clock Abstractions:**
+- `SystemMonotonicClock` — Production monotonic clock (enum singleton pattern) for all correctness-critical timing
+- `SystemWallClock` — Production wall clock for observability and diagnostics only
+
+**Scheduling Infrastructure:**
+- `ScheduledExecutorScheduler` — Production scheduler backed by `ScheduledExecutorService`
+- Supports deterministic testing via manual clock/scheduler injection
+
+**Activity Tracking and Timeout Suppression:**
+- `GenisysMonotonicActivityTracker` — Tracks semantic activity from stations for timeout suppression
+- Activity-based timeout cancellation: semantic activity (valid responses) cancels pending timeouts
+
+**Timed Execution:**
+- `TimedGenisysIntentExecutor` — Executor wrapper that arms response timeouts and tracks sends
+- `SendTracker` — Communication channel between delegate executor and timed executor for `POLL_NEXT` coordination
+- Per-station send time tracking for cadence gating
+
+**Operational Coordination:**
+- `GenisysOperationalDriver` — Event loop coordinator with serialized event processing (actor-like model)
+- `GenisysTimingPolicy` — Immutable configuration record with poll/recall/control timing parameters
+
+### E.3 Test Coverage Metrics
+
+Phase 5 completion is validated by comprehensive test coverage:
+
+- **Total tests:** 162 (up from 138 at Phase 4 completion)
+- **New tests added:** 24
+  - 8 Phase 5 integration tests
+  - 8 `GenisysOperationalDriver` tests
+  - 6 `GenisysTimingPolicyTest` tests
+  - 5 `ScheduledExecutorSchedulerTest` tests (including edge cases)
+- **Pass rate:** 100%
+- **Duration:** 0.715s
+
+All Phase 1–4 tests remain unchanged and passing, confirming backward compatibility.
+
+### E.4 Architectural Decisions
+
+The following architectural decisions were made and enforced during Phase 5:
+
+1. **Monotonic time for correctness logic**
+   All timeout arming, activity tracking, and cadence gating use monotonic time. Wall-clock time is used only for observability (logging, metrics timestamps).
+
+2. **Timeouts as events**
+   Response timeouts are injected into the reducer as `ResponseTimeout` events rather than causing silent resends. This preserves reducer authority over retry decisions.
+
+3. **Retries remain reducer-driven**
+   Per Phase 1–4 design, the reducer decides when and whether to retry. The timer infrastructure only injects timeout events; it does not originate protocol behavior.
+
+4. **Activity-based timeout suppression**
+   Semantic activity from stations (valid responses) cancels pending response timeouts. This prevents spurious timeout events when communication is healthy but slow.
+
+5. **Actor-like event loop**
+   `GenisysOperationalDriver` provides serialized event processing, ensuring deterministic execution order and simplifying concurrency reasoning.
+
+### E.5 Backward Compatibility
+
+Phase 5 preserves full backward compatibility with Phase 4:
+
+- `UdpTransportAdapter` accepts an **optional** activity tracker parameter
+- `GenisysUdpRuntime` provides both Phase 4-compatible and Phase 5-enhanced constructors
+- Existing Phase 4 integrations continue to function without modification
+- Activity tracking is additive; omitting it simply disables timeout suppression
+
+### E.6 What Was Deferred or Simplified
+
+The following concerns were explicitly deferred to Phase 6+:
+
+- **Observability sinks** — Structured logging, metrics emission, and tracing remain Phase 6 scope
+- **Configuration binding** — External configuration sources remain Phase 7 scope
+- **Fault injection testing** — Adversarial timer/scheduler scenarios remain Phase 8 scope
+- **Backpressure and overload testing** — Remains Phase 8 scope
+
+Phase 5 focused strictly on **timing correctness** without introducing observability or configuration concerns.
+
+### E.7 Files Modified
+
+The following existing files were modified to support Phase 5:
+
+- `GenisysTimingPolicy.java` — Extended with poll/recall/control timing fields
+- `UdpTransportAdapter.java` — Added optional activity tracker parameter
+- `GenisysUdpRuntime.java` — Added Phase 5 constructor with activity tracker
+
+### E.8 Key Implementation Files
+
+The following new files were introduced in Phase 5:
+
+- `SystemMonotonicClock.java` — Production monotonic clock
+- `SystemWallClock.java` — Production wall clock
+- `ScheduledExecutorScheduler.java` — Production scheduler
+- `GenisysMonotonicActivityTracker.java` — Activity tracking
+- `TimedGenisysIntentExecutor.java` — Timeout-aware executor wrapper
+- `SendTracker.java` — Send coordination channel
+- `GenisysOperationalDriver.java` — Event loop coordinator
+
+### E.9 Implication for Phase 6
+
+Because Phase 5 is closed:
+
+- Phase 6 may introduce observability sinks (logging, metrics, tracing) without touching timing logic
+- Observability must consume timing signals but must not influence timing decisions
+- Any regression in timing behavior discovered during Phase 6 is an **observability integration defect**, not a timing defect
+
+Phase 5 therefore represents the point at which the GENISYS WaysideController transitions from a **transport-integrated system** to a **temporally-correct operational system** ready for production observability.
