@@ -137,6 +137,14 @@ public final class GenisysUdpRuntime {
     }
 
     /**
+     * Returns the underlying transport adapter.
+     * Used for wiring outbound executors.
+     */
+    public UdpTransportAdapter transport() {
+        return transport;
+    }
+
+    /**
      * Stop the runtime and release transport resources.
      */
     public void stop() {

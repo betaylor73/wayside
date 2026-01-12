@@ -1013,3 +1013,95 @@ Because Phase 5 is closed:
 - Any regression in timing behavior discovered during Phase 6 is an **observability integration defect**, not a timing defect
 
 Phase 5 therefore represents the point at which the GENISYS WaysideController transitions from a **transport-integrated system** to a **temporally-correct operational system** ready for production observability.
+
+---
+
+## Appendix F — Phase 6 Completion Notes
+
+This appendix records **why Phase 6 is formally closed**, what was implemented, and what guarantees now hold.
+
+### F.1 Completion Date
+
+Phase 6 was formally closed on **2026-01-12**.
+
+### F.2 Key Deliverables and Components
+
+Phase 6 transformed the validated Phase 1-5 components into a production-ready runtime system:
+
+**Observability Infrastructure:**
+- `GenisysObservabilitySink` — Pluggable interface for semantic event monitoring
+- `Slf4jGenisysObservabilitySink` — Production implementation for structured logging
+- `RecordingObservabilitySink` — Test implementation for asserting on protocol behavior
+
+**Configuration Model:**
+- `GenisysStationConfig` — Type-safe mapping of station IDs to network addresses
+- `GenisysRuntimeConfig` — Aggregated configuration including timing and behavior flags
+- Support for `controlCheckbackEnabled` and `securePolls` toggles
+
+**Production Runtime:**
+- `GenisysProductionRuntime` — Unified composition root and lifecycle owner
+- `GenisysProductionRuntime.Builder` — Handles complex component wiring and circular dependencies
+- Coordinated start/stop/shutdown across all subsystems
+
+**User API Bridge:**
+- `GenisysProductionController` — Implementation of `AbstractWaysideController` for GENISYS
+- Bridges public WaysideController API to internal protocol events and state
+
+### F.3 Test Coverage Metrics
+
+Phase 6 completion is validated by comprehensive test coverage:
+
+- **Total tests:** 165 (up from 162 at Phase 5 completion)
+- **New tests added:** 3
+  - `Phase6IntegrationTest` — Verifies production composition and observability
+  - `GenisysProductionControllerTest` — Verifies status mapping and API bridging
+  - `GenisysProductionRuntimeSmokeTest` — Verifies full-stack lifecycle with real transport
+- **Pass rate:** 100%
+- **Backward Compatibility:** All Phase 1–5 tests continue to pass (162 tests)
+
+### F.4 Architectural Decisions
+
+The following architectural decisions were made during Phase 6:
+
+1. **Structured Observability at Semantic Boundaries**
+   Events are emitted for state transitions and protocol anomalies, but never for raw bytes or frame segments. This preserves the "Decode-before-event" principle.
+
+2. **Composition Root Pattern**
+   A dedicated runtime factory handles all component wiring, ensuring that complexity is contained and that components remain unit-testable in isolation.
+
+3. **Status Mapping Authority**
+   The internal protocol state is the sole source of truth for the public `ControllerStatus` (CONNECTED, DEGRADED, DISCONNECTED).
+
+4. **Programmatic Configuration**
+   Configuration remains programmatic and immutable, avoiding the complexity and fragility of file parsing in the core library.
+
+### F.5 Backward Compatibility
+
+Phase 6 preserves full backward compatibility with Phase 5:
+
+- `GenisysOperationalDriver` provides a backward-compatible constructor
+- Observability is opt-in; the system defaults to `NullObservabilitySink`
+- All Phase 5 tests pass without modification
+
+### F.6 Files Created
+
+- `GenisysObservabilitySink.java`
+- `GenisysStateTransitionEvent.java`
+- `GenisysProtocolObservabilityEvent.java`
+- `GenisysTransportObservabilityEvent.java`
+- `GenisysErrorEvent.java`
+- `NullObservabilitySink.java`
+- `Slf4jGenisysObservabilitySink.java`
+- `RecordingObservabilitySink.java` (test)
+- `GenisysStationConfig.java`
+- `GenisysRuntimeConfig.java`
+- `GenisysProductionRuntime.java`
+- `GenisysProductionController.java`
+- `DefaultIndicationCodec.java`
+- `DefaultControlCodec.java`
+- `Phase6IntegrationTest.java`
+- `GenisysProductionControllerTest.java`
+- `GenisysProductionRuntimeSmokeTest.java`
+- `Phase6-ProductionUsage.md`
+- `GenisysObservability.md`
+- `GenisysTroubleshooting.md`

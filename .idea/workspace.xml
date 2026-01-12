@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="131641a4-d331-40d6-bf46-7efcd0a468f1" name="Changes" comment="" />
+    <list default="true" id="131641a4-d331-40d6-bf46-7efcd0a468f1" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/exec/GenisysOperationalDriver.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/internal/exec/GenisysOperationalDriver.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/runtime/GenisysUdpRuntime.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/questrail/wayside/protocol/genisys/runtime/GenisysUdpRuntime.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -46,59 +50,159 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Gradle.DefaultGenisysFrameDecoderTest.decodeExtractsFields.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.DefaultGenisysFrameDecoderTest.decodeValid.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.DefaultGenisysFrameDecoderTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysCrcTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysEncodeDecodeRoundTripTest.controlDataRoundTrip_payloadDelivered.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysEncodeDecodeRoundTripTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysEscapingTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysFramingTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysMessageDecoderTest.decodeControlCheckbackFrame.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysMessageDecoderTest.decodeControlDataFrame.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysMessageDecoderTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysMessageDecoderTest.rejectAcknowledgeWithUnexpectedCrc.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysMessageDecoderTest.rejectMissingRequiredCrc.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysReducerExecutorIntegrationTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysReducerExecutorIntegrationTest.initializationRecallThenPollFlow.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysStateReducerTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysStateReducerTest.recallResponseTransitionsToSendControls.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysSyntheticEventSourcesTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysSyntheticEventSourcesTest.failureCounterIncrementsMonotonicallyUnderRepeatedTimeouts.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysSyntheticEventSourcesTest.messageAfterTimeoutDoesNotBreakDeterminism.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysSyntheticEventSourcesTest.multiSlaveIsolationUnderAdversarialOrdering.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.GenisysSyntheticEventSourcesTest.transportDownMidCycleForcesGlobalReinitialization.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.TimedGenisysIntentExecutorTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.UdpGenisysIntentExecutorTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.UdpGenisysIntentExecutorTest.pollNextRespectsSecurePollsConfiguration.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.UdpGenisysIntentExecutorTest.pollNextSendsAcknowledgeAndPollWhenAckPending.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.UdpTransportIntegrationTest.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.UdpTransportIntegrationTest.outboundOnlySendRecallIntentProducesUdpDatagram.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.UdpTransportIntegrationTest.transportDownEventIsSubmittedToController.executor&quot;: &quot;Run&quot;,
-    &quot;Gradle.UdpTransportIntegrationTest.transportUpEventIsSubmittedToController.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/brandon/dev/quest/sqlcp/src/main/java/com/quest/waysidecontroller/genisys/CRC16.java&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;junie.application.models&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Gradle.DefaultGenisysFrameDecoderTest.decodeExtractsFields.executor": "Run",
+    "Gradle.DefaultGenisysFrameDecoderTest.decodeValid.executor": "Run",
+    "Gradle.DefaultGenisysFrameDecoderTest.executor": "Run",
+    "Gradle.GenisysCrcTest.executor": "Run",
+    "Gradle.GenisysEncodeDecodeRoundTripTest.controlDataRoundTrip_payloadDelivered.executor": "Run",
+    "Gradle.GenisysEncodeDecodeRoundTripTest.executor": "Run",
+    "Gradle.GenisysEscapingTest.executor": "Run",
+    "Gradle.GenisysFramingTest.executor": "Run",
+    "Gradle.GenisysMessageDecoderTest.decodeControlCheckbackFrame.executor": "Run",
+    "Gradle.GenisysMessageDecoderTest.decodeControlDataFrame.executor": "Run",
+    "Gradle.GenisysMessageDecoderTest.executor": "Run",
+    "Gradle.GenisysMessageDecoderTest.rejectAcknowledgeWithUnexpectedCrc.executor": "Run",
+    "Gradle.GenisysMessageDecoderTest.rejectMissingRequiredCrc.executor": "Run",
+    "Gradle.GenisysProductionControllerTest.executor": "Run",
+    "Gradle.GenisysProductionRuntimeSmokeTest.executor": "Run",
+    "Gradle.GenisysReducerExecutorIntegrationTest.executor": "Run",
+    "Gradle.GenisysReducerExecutorIntegrationTest.initializationRecallThenPollFlow.executor": "Run",
+    "Gradle.GenisysStateReducerTest.executor": "Run",
+    "Gradle.GenisysStateReducerTest.recallResponseTransitionsToSendControls.executor": "Run",
+    "Gradle.GenisysSyntheticEventSourcesTest.executor": "Run",
+    "Gradle.GenisysSyntheticEventSourcesTest.failureCounterIncrementsMonotonicallyUnderRepeatedTimeouts.executor": "Run",
+    "Gradle.GenisysSyntheticEventSourcesTest.messageAfterTimeoutDoesNotBreakDeterminism.executor": "Run",
+    "Gradle.GenisysSyntheticEventSourcesTest.multiSlaveIsolationUnderAdversarialOrdering.executor": "Run",
+    "Gradle.GenisysSyntheticEventSourcesTest.transportDownMidCycleForcesGlobalReinitialization.executor": "Run",
+    "Gradle.Phase5IntegrationTest.executor": "Run",
+    "Gradle.Phase6IntegrationTest.executor": "Run",
+    "Gradle.TimedGenisysIntentExecutorTest.executor": "Run",
+    "Gradle.UdpGenisysIntentExecutorTest.executor": "Run",
+    "Gradle.UdpGenisysIntentExecutorTest.pollNextRespectsSecurePollsConfiguration.executor": "Run",
+    "Gradle.UdpGenisysIntentExecutorTest.pollNextSendsAcknowledgeAndPollWhenAckPending.executor": "Run",
+    "Gradle.UdpTransportIntegrationTest.executor": "Run",
+    "Gradle.UdpTransportIntegrationTest.outboundOnlySendRecallIntentProducesUdpDatagram.executor": "Run",
+    "Gradle.UdpTransportIntegrationTest.transportDownEventIsSubmittedToController.executor": "Run",
+    "Gradle.UdpTransportIntegrationTest.transportUpEventIsSubmittedToController.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "master",
+    "junie.onboarding.icon.badge.shown": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/home/brandon/dev/quest/sqlcp/src/main/java/com/quest/waysidecontroller/genisys/CRC16.java",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "junie.application.models",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
-  <component name="RunManager" selected="Gradle.TimedGenisysIntentExecutorTest">
+}]]></component>
+  <component name="RunManager" selected="Gradle.Phase5IntegrationTest">
+    <configuration name="GenisysProductionControllerTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.test.GenisysProductionControllerTest&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="GenisysProductionRuntimeSmokeTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.test.GenisysProductionRuntimeSmokeTest&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="Phase5IntegrationTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.test.Phase5IntegrationTest&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
+    <configuration name="Phase6IntegrationTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":test" />
+            <option value="--tests" />
+            <option value="&quot;com.questrail.wayside.protocol.genisys.test.Phase6IntegrationTest&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <method v="2" />
+    </configuration>
     <configuration name="TimedGenisysIntentExecutorTest" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
@@ -123,102 +227,6 @@
       <RunAsTest>true</RunAsTest>
       <method v="2" />
     </configuration>
-    <configuration name="UdpGenisysIntentExecutorTest.pollNextRespectsSecurePollsConfiguration" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value=":test" />
-            <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.transport.udp.UdpGenisysIntentExecutorTest.pollNextRespectsSecurePollsConfiguration&quot;" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="UdpGenisysIntentExecutorTest.pollNextSendsAcknowledgeAndPollWhenAckPending" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value=":test" />
-            <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.transport.udp.UdpGenisysIntentExecutorTest.pollNextSendsAcknowledgeAndPollWhenAckPending&quot;" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="UdpTransportIntegrationTest.transportDownEventIsSubmittedToController" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value=":test" />
-            <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.transport.udp.UdpTransportIntegrationTest.transportDownEventIsSubmittedToController&quot;" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
-      <method v="2" />
-    </configuration>
-    <configuration name="UdpTransportIntegrationTest.transportUpEventIsSubmittedToController" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" value="" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value=":test" />
-            <option value="--tests" />
-            <option value="&quot;com.questrail.wayside.protocol.genisys.transport.udp.UdpTransportIntegrationTest.transportUpEventIsSubmittedToController&quot;" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <RunAsTest>true</RunAsTest>
-      <method v="2" />
-    </configuration>
     <configuration default="true" type="JetRunConfigurationType">
       <method v="2">
         <option name="Make" enabled="true" />
@@ -230,11 +238,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Gradle.Phase5IntegrationTest" />
+        <item itemvalue="Gradle.GenisysProductionRuntimeSmokeTest" />
+        <item itemvalue="Gradle.GenisysProductionControllerTest" />
+        <item itemvalue="Gradle.Phase6IntegrationTest" />
         <item itemvalue="Gradle.TimedGenisysIntentExecutorTest" />
-        <item itemvalue="Gradle.UdpTransportIntegrationTest.transportDownEventIsSubmittedToController" />
-        <item itemvalue="Gradle.UdpTransportIntegrationTest.transportUpEventIsSubmittedToController" />
-        <item itemvalue="Gradle.UdpGenisysIntentExecutorTest.pollNextRespectsSecurePollsConfiguration" />
-        <item itemvalue="Gradle.UdpGenisysIntentExecutorTest.pollNextSendsAcknowledgeAndPollWhenAckPending" />
       </list>
     </recent_temporary>
   </component>
@@ -261,7 +269,7 @@
       <workItem from="1767549376756" duration="15136000" />
       <workItem from="1767668635747" duration="7000" />
       <workItem from="1768028433272" duration="1148000" />
-      <workItem from="1768111117463" duration="3673000" />
+      <workItem from="1768111117463" duration="4732000" />
     </task>
     <servers />
   </component>

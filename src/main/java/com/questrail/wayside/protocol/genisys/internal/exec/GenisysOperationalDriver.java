@@ -7,6 +7,11 @@ import com.questrail.wayside.protocol.genisys.internal.state.GenisysStateReducer
 import com.questrail.wayside.protocol.genisys.internal.time.Cancellable;
 import com.questrail.wayside.protocol.genisys.internal.time.MonotonicClock;
 import com.questrail.wayside.protocol.genisys.internal.time.MonotonicScheduler;
+import com.questrail.wayside.protocol.genisys.internal.time.SystemWallClock;
+import com.questrail.wayside.protocol.genisys.observability.GenisysErrorEvent;
+import com.questrail.wayside.protocol.genisys.observability.GenisysObservabilitySink;
+import com.questrail.wayside.protocol.genisys.observability.GenisysStateTransitionEvent;
+import com.questrail.wayside.protocol.genisys.observability.NullObservabilitySink;
 
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
@@ -61,6 +66,7 @@ public final class GenisysOperationalDriver {
     private final MonotonicScheduler scheduler;
     private final GenisysTimingPolicy timingPolicy;
     private final Supplier<GenisysControllerState> initialStateSupplier;
+    private final GenisysObservabilitySink observabilitySink;
 
     private final BlockingQueue<GenisysEvent> eventQueue;
     private final AtomicBoolean running = new AtomicBoolean(false);
@@ -85,7 +91,8 @@ public final class GenisysOperationalDriver {
                                    MonotonicClock clock,
                                    MonotonicScheduler scheduler,
                                    GenisysTimingPolicy timingPolicy,
-                                   Supplier<GenisysControllerState> initialStateSupplier)
+                                   Supplier<GenisysControllerState> initialStateSupplier,
+                                   GenisysObservabilitySink observabilitySink)
     {
         this.reducer = Objects.requireNonNull(reducer, "reducer");
         this.executor = Objects.requireNonNull(executor, "executor");
@@ -93,8 +100,23 @@ public final class GenisysOperationalDriver {
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
         this.timingPolicy = Objects.requireNonNull(timingPolicy, "timingPolicy");
         this.initialStateSupplier = Objects.requireNonNull(initialStateSupplier, "initialStateSupplier");
+        this.observabilitySink = Objects.requireNonNullElse(observabilitySink, NullObservabilitySink.INSTANCE);
 
         this.eventQueue = new LinkedBlockingQueue<>();
+        this.currentState = initialStateSupplier.get();
+    }
+
+    /**
+     * Backward-compatible constructor for Phase 5.
+     */
+    public GenisysOperationalDriver(GenisysStateReducer reducer,
+                                   GenisysIntentExecutor executor,
+                                   MonotonicClock clock,
+                                   MonotonicScheduler scheduler,
+                                   GenisysTimingPolicy timingPolicy,
+                                   Supplier<GenisysControllerState> initialStateSupplier)
+    {
+        this(reducer, executor, clock, scheduler, timingPolicy, initialStateSupplier, null);
     }
 
     /**
@@ -174,10 +196,11 @@ public final class GenisysOperationalDriver {
                     Thread.currentThread().interrupt();
                 }
             } catch (Exception e) {
-                // Log but don't crash the event loop
-                // TODO: Add logging when observability is wired
-                System.err.println("Error processing event: " + e.getMessage());
-                e.printStackTrace();
+                observabilitySink.onError(new GenisysErrorEvent(
+                    SystemWallClock.INSTANCE.now(),
+                    "Event processing error",
+                    e
+                ));
             }
         }
     }
@@ -186,12 +209,23 @@ public final class GenisysOperationalDriver {
      * Processes a single event: apply via reducer, execute resulting intents.
      */
     private void processEvent(GenisysEvent event) {
-        GenisysStateReducer.Result result;
+        final GenisysControllerState oldState;
+        final GenisysStateReducer.Result result;
 
         synchronized (stateLock) {
+            oldState = currentState;
             result = reducer.apply(currentState, event);
             currentState = result.newState();
         }
+
+        // Observability hook
+        observabilitySink.onStateTransition(new GenisysStateTransitionEvent(
+            SystemWallClock.INSTANCE.now(),
+            oldState,
+            result.newState(),
+            event,
+            result.intents()
+        ));
 
         // Execute intents if non-empty
         if (!result.intents().isEmpty()) {
